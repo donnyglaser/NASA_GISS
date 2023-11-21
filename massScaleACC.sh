@@ -1,27 +1,27 @@
 #!/bin/bash
 
 diags=()
-## Comment out the diagnostics that you do not want ##
+## Remove comment for the desired diagnostics ##
 
 # ATMOS #
-diags+=("aij")
-diags+=("aijk")
-diags+=('aijl')
-diags+=('taij')
-diags+=('taijl')
+#diags+=("aij")
+#diags+=("aijk")
+#diags+=('aijl')
+#diags+=('taij')
+#diags+=('taijl')
 
 # OCEAN #
-diags+=('oij')
-diags+=('oijk')
-diags+=('oijl')
-diags+=('toij')
-diags+=('toijl')
+#diags+=('oij')
+#diags+=('oijk')
+#diags+=('oijl')
+#diags+=('toij')
+#diags+=('toijl')
 
 ## SUBDD ##
-diags+=('aijph2')
-diags+=('taijph2')
-diags+=('oijph2')
-diags+=('toijph2')
+#diags+=('aijph2')
+#diags+=('taijph2')
+#diags+=('oijph2')
+#diags+=('toijph2')
 
 # list all .acc files
 accAll=`ls ./*.acc*`
