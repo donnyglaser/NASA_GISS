@@ -40,6 +40,6 @@ mkdir diagOut
 
 for i in "${diags[@]}"
 do
-        target="*"$i$x"*"
+        target="*."$i$x"*"
         mv -f $target ./diagOut/
 done
