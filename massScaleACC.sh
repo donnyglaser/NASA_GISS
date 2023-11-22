@@ -43,3 +43,7 @@ do
         target="*."$i$x"*"
         mv -f $target ./diagOut/
 done
+
+## Remove Partial Files ##
+cd diagOut
+rm PARTIAL.*
