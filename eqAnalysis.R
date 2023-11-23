@@ -17,7 +17,7 @@ diagList <- c()
 #diagList <- c(diagList, 'taij')
 #diagList <- c(diagList, 'taijl')
 ## OCEAN ##
-#diagList <- c(diagList, 'oil')
+#diagList <- c(diagList, 'oij')
 #diagList <- c(diagList, 'oijk')
 #diagList <- c(diagList, 'oijl')
 #diagList <- c(diagList, 'toij')
