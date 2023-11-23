@@ -8,35 +8,20 @@ library(reshape)
 
 diagList <- c()
 ####################################
-### Uncomment target diagnostics ###
+### Comment unwanted diagnostics ###
 ####################################
+# I think these are the best diagnostics for equilibrium analysis #
 ## ATMOS ##
-#diagList <- c(diagList, 'aij')
-#diagList <- c(diagList, 'aijk')
-#diagList <- c(diagList, 'aijl')
-#diagList <- c(diagList, 'taij')
-#diagList <- c(diagList, 'taijl')
+diagList <- c(diagList, 'aij')
+diagList <- c(diagList, 'aijk')
+diagList <- c(diagList, 'aijl')
 ## OCEAN ##
-#diagList <- c(diagList, 'oij')
-#diagList <- c(diagList, 'oijk')
-#diagList <- c(diagList, 'oijl')
-#diagList <- c(diagList, 'toij')
-#diagList <- c(diagList, 'toijl')
-## SUBDD ##
-#diagList <- c(diagList, 'aijph2')
-#diagList <- c(diagList, 'taijph2')
-#diagList <- c(diagList, 'oijph2')
-#diagList <- c(diagList, 'toijph2')
+diagList <- c(diagList, 'oijl')
 
 ## Extract name of run ##
 runName <- list.files(getwd(), pattern = diagList[1])[1]
 runName <- substr(runName,9,nchar(runName)-3)
 runName <- gsub(diagList[1], '', runName)
-
-
-# aijList <- list.files(getwd(), pattern = '.aij')
-# run <- aijList[1]
-# run <- substring(run, 12, (nchar(run)-3))
 
 dateList <- list.files(getwd(), pattern = diagList[1])
 dateList <- substr(dateList, 4, 7)
@@ -51,7 +36,12 @@ monList <- c('JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT
 latList <- c(90, 78, 62, 46, 30, 14, 2, -14, -30, -46, -62, -78, -90)
 
 ## This array needs to be customized for specific diagnostics, these are a select set for aij files ##
-varList <- c("bs_snowdp", "gice", "gwtr", "incsw_toa", "landicefr", "prsurf", "qatm", "snowdp", "srtrnf_grnd", "tgrnd", "tsurf", "wsurf", "zsnow")
+allVar <- data.frame()
+allVar <- rbind(allVar, cbind('aij', c("bs_snowdp", "gice", "gwtr", "incsw_toa", "landicefr", "prsurf", "qatm", "snowdp", "srtrnf_grnd", "tgrnd", "tsurf", "wsurf", "zsnow")))
+allVar <- rbind(allVar, cbind('aijl', c('q', 'rh', 'temp')))
+allVar <- rbind(allVar, cbind('aijk',c('tb')))
+allVar <- rbind(allVar, cbind('oijl', c('heat', 'pot_temp', 'salt')))
+colnames(allVar) <- c('Diagnostic', 'Variable')
 
 outFrame <- data.frame()
 for(iDiag in 1:length(diagList)) {
@@ -83,8 +73,12 @@ for(iDiag in 1:length(diagList)) {
             fil <- paste0(getwd(), '/', tFile)
             nc_data <- nc_open(fil)
 
+            varList <- subset(allVar, Diagnostic %in% diagList[iDiag])
             for(iVar in 1:length(varList)) {
                 t_data <- ncvar_get(nc_data, varid=varList[iVar])
+
+                ## need to add a bit here to add z levels ##
+                ## if else ##
                 
                 colnames(t_data) <- seq(-90,90,4)
                 row.names(t_data) <- seq(-177.5,177.5,5)
@@ -111,7 +105,7 @@ for(iDiag in 1:length(diagList)) {
     }
 }
 
-colnames(outFrame) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Variable', 'Mean_Value', 'SD_Value')
+colnames(outFrame) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Variable', 'Mean_Value', 'SD_Value') ## add level column (surface/level#/pressure)
 outFrame[,c(2,5,7:8)] <- apply(outFrame[,c(2,5,7:8)], 2, as.numeric)
 outFrame <- outFrame %>% mutate(Time = as.POSIXct(paste0('00', Year, '-', Month_Num, '-', 01, ' ', 00, ':', 00, ':', 00), format='%Y-%m-%d %H:%M:%OS'))
 
