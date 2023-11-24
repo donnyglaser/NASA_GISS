@@ -13,11 +13,27 @@ latLo <- latLabs[5:9]
 latMid <- latLabs[c(3:4, 10:11)]
 latHi <- latLabs[c(1:2, 12:13)]
 
-varList <- c("axyp", "bs_snowdp", "gice", "gwtr", "incsw_toa", "landicefr", "mass_CO2cond", "prsurf", "qatm", "snowdp", "srf_wind_dir", "srtrnf_grnd", "tgrnd", "tsurf", "wsurf", "zsnow")
-varNames <- c(expression('Gridcell Area (' * m^-2 * ')'), expression('Snow Depth (mm H'[2] *'O)'), expression("Total Ice (" * kg ~ m^-2 * ")"), expression('Total Water (' * kg ~ m^-2 * ')'), expression('Incident Solar Radiation (' * W ~ m^-2 * ')'), 'Land Ice Fraction (%)', expression('CO'[2] * " Condensate Mass (" * kg ~ m^-2 * ")"), 'Surface Pressure (mb)', expression('Atmospheric Water Vapor Column (' * kg ~ m^-2 * ')'), 'Snow Depth (mm H2O)', 'Surface Wind Direction (ºCW North)', expression('Net Radiation at Ground (' * W ~ m^-2 * ')'), 'Ground Temperature (ºC)', 'Surface Air Temperature (ºC)', expression('Surface Wind Speed (' * m ~ s^-1 * ')'), 'Snow Thickness (m)')
+#varList <- c("axyp", "bs_snowdp", "gice", "gwtr", "incsw_toa", "landicefr", "mass_CO2cond", "prsurf", "qatm", "snowdp", "srf_wind_dir", "srtrnf_grnd", "tgrnd", "tsurf", "wsurf", "zsnow")
+#varNames <- c(expression('Gridcell Area (' * m^-2 * ')'), expression('Snow Depth (mm H'[2] *'O)'), expression("Total Ice (" * kg ~ m^-2 * ")"), expression('Total Water (' * kg ~ m^-2 * ')'), expression('Incident Solar Radiation (' * W ~ m^-2 * ')'), 'Land Ice Fraction (%)', expression('CO'[2] * " Condensate Mass (" * kg ~ m^-2 * ")"), 'Surface Pressure (mb)', expression('Atmospheric Water Vapor Column (' * kg ~ m^-2 * ')'), 'Snow Depth (mm H2O)', 'Surface Wind Direction (ºCW North)', expression('Net Radiation at Ground (' * W ~ m^-2 * ')'), 'Ground Temperature (ºC)', 'Surface Air Temperature (ºC)', expression('Surface Wind Speed (' * m ~ s^-1 * ')'), 'Snow Thickness (m)')
 
-# equilibrium variables: bs_snowdp, gice, gwtr, prsurf, qatm
+## comment certain of these out if you are omitting certain diagnostics ##
+allVar <- data.frame()
+allVar <- rbind(allVar, cbind('aij', c("bs_snowdp", "gice", "gwtr", "incsw_toa", "landicefr", "prsurf", "qatm", "snowdp", "srf_wind_dir", "srtrnf_grnd", "tgrnd", "tsurf", "wsurf", "zsnow")))
+allVar <- rbind(allVar, cbind('aijl', c('q', 'rh', 'temp')))
+allVar <- rbind(allVar, cbind('aijk',c('tb')))
+allVar <- rbind(allVar, cbind('oij', c('oij_hbl', 'oij_mld')))
+allVar <- rbind(allVar, cbind('oijl', c('heat', 'pot_temp', 'salt')))
 
+## comment certain of these out if you are omitting certain diagnostics ##
+nameVar <- c()
+nameVar <- c(nameVar, c(expression('Snow Depth (mm H'[2] *'O)'), expression("Total Ice (" * kg ~ m^-2 * ")"), expression('Total Water (' * kg ~ m^-2 * ')'), expression('Incident Solar Radiation (' * W ~ m^-2 * ')'), 'Land Ice Fraction (%)', 'Surface Pressure (mb)', expression('Atmospheric Water Vapor Column (' * kg ~ m^-2 * ')'), 'Snow Depth (mm H2O)', 'Surface Wind Direction (ºCW North)', expression('Net Radiation at Ground (' * W ~ m^-2 * ')'), 'Ground Temperature (ºC)', 'Surface Air Temperature (ºC)', expression('Surface Wind Speed (' * m ~ s^-1 * ')'), 'Snow Thickness (m)')) # comment out if not plotting aij
+nameVar <- c(nameVar, c(expression('Specific Humidity (' * kg ~ kg^-1 * ')'), 'Relative Humidity (%)', 'Temperature (ºC)')) # comment out if not plotting aijl
+nameVar <- c(nameVar, c('Temperature (ºC)')) # comment out if not plotting aijk
+nameVar <- c(nameVar, c('KPP Boundary Layer Depth (m)', 'Mixed Layer Depth (m)')) # comment out if not plotting oij
+nameVar <- c(nameVar, c(expression("Ocean Heat Content (" * J ~ kg^-1 * ")"), 'Ocean Potential Temperature (ºC)', 'Salinity (psu)')) # comment out if not plotting oijl
+
+
+## need to account for extra column in sheet (layer) ##
 
 for(ifile in 1:length(datList)) {
 
