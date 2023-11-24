@@ -20,9 +20,12 @@ diagList <- c(diagList, 'oij')
 diagList <- c(diagList, 'oijl')
 
 ## Extract name of run ##
-runName <- list.files(getwd(), pattern = diagList[1])[1]
+runName <- list.files(getwd(), pattern = diagList[1])
+runName <- runName[!grepl('aijk|aijl', runName)]
+runName <- runName[1]
 runName <- substr(runName,9,nchar(runName)-3)
 runName <- gsub(diagList[1], '', runName)
+
 
 dateList <- list.files(getwd(), pattern = diagList[1])
 dateList <- substr(dateList, 4, 7)
@@ -38,7 +41,7 @@ latList <- c(90, 78, 62, 46, 30, 14, 2, -14, -30, -46, -62, -78, -90)
 
 ## select variables to analyze equilibrium in aij, aijk, aijl, oil, and oijl diagnostics ## edit if you like
 allVar <- data.frame()
-allVar <- rbind(allVar, cbind('aij', c("bs_snowdp", "gice", "gwtr", "incsw_toa", "landicefr", "prsurf", "qatm", "snowdp", "srtrnf_grnd", "tgrnd", "tsurf", "wsurf", "zsnow")))
+allVar <- rbind(allVar, cbind('aij', c("gice", "gwtr", "incsw_toa", "landicefr", "prsurf", "qatm", "snowdp", "srtrnf_grnd", "tgrnd", "tsurf", "wsurf", "zsnow")))
 allVar <- rbind(allVar, cbind('aijl', c('q', 'rh', 'temp')))
 allVar <- rbind(allVar, cbind('aijk',c('tb')))
 allVar <- rbind(allVar, cbind('oij', c('oij_hbl', 'oij_mld')))
@@ -52,7 +55,7 @@ oLayers <- c(1, 2, 3, 8, 13)
 
 outFrame <- data.frame()
 for(iDiag in 1:length(diagList)) {
-    diagFiles <- list.files(getwd(), pattern = diagList[iDiag])
+    diagFiles <- list.files(getwd(), pattern = paste0(diagList[iDiag], runName))
 
     for(iYear in YearI:YearE) { # handles up to 9999 years
         if(iYear > 999) {
@@ -102,7 +105,7 @@ for(iDiag in 1:length(diagList)) {
                     }
 
                     ## Global and Hemisphere Averages ##
-                    hemiData <- ncvar_get(nc_data, varid=paste0(varList[iVar], '_hemis'))
+                    hemiData <- ncvar_get(nc_data, varid=paste0(varList[iVar,2], '_hemis'))
                     tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], 'SouthernHemisphere', 'AtmosSurface', varList[iVar], hemiData[1], 0)
                     outFrame <- rbind(outFrame, tOut)
                     tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], 'NorthernHemisphere', 'AtmosSurface', varList[iVar], hemiData[2], 0)
