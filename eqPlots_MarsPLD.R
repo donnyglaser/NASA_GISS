@@ -13,8 +13,8 @@ latLo <- latLabs[5:9]
 latMid <- latLabs[c(3:4, 10:11)]
 latHi <- latLabs[c(1:2, 12:13)]
 
-varList <- c("axyp", "bs_snowdp", "gice", "gwtr", "incsw_toa", "landicefr", "mass_CO2cond", "prsurf", "qatm", "snowdp", "srf_wind_dir", "srtrnf_grnd", "tgrnd", "tsurf", "wsurf", "zsnow")
-varNames <- c(expression('Gridcell Area (' * m^-2 * ')'), expression('Snow Depth (mm H'[2] *'O)'), expression("Total Ice (" * kg ~ m^-2 * ")"), expression('Total Water (' * kg ~ m^-2 * ')'), expression('Incident Solar Radiation (' * W ~ m^-2 * ')'), 'Land Ice Fraction (%)', expression('CO'[2] * " Condensate Mass (" * kg ~ m^-2 * ")"), 'Surface Pressure (mb)', expression('Atmospheric Water Vapor Column (' * kg ~ m^-2 * ')'), 'Snow Depth (mm H2O)', 'Surface Wind Direction (ºCW North)', expression('Net Radiation at Ground (' * W ~ m^-2 * ')'), 'Ground Temperature (ºC)', 'Surface Air Temperature (ºC)', expression('Surface Wind Speed (' * m ~ s^-1 * ')'), 'Snow Thickness (m)')
+varList <- c("bs_snowdp", "gice", "gwtr", "incsw_toa", "landicefr", "mass_CO2cond", "prsurf", "qatm", "snowdp", "srtrnf_grnd", "tgrnd", "tsurf", "wsurf", "zsnow")
+varNames <- c(expression('Snow Depth (mm H'[2] *'O)'), expression("Total Ice (" * kg ~ m^-2 * ")"), expression('Total Water (' * kg ~ m^-2 * ')'), expression('Incident Solar Radiation (' * W ~ m^-2 * ')'), 'Land Ice Fraction (%)', expression('CO'[2] * " Condensate Mass (" * kg ~ m^-2 * ")"), 'Surface Pressure (mb)', expression('Atmospheric Water Vapor Column (' * kg ~ m^-2 * ')'), 'Snow Depth (mm H2O)', expression('Net Radiation at Ground (' * W ~ m^-2 * ')'), 'Ground Temperature (ºC)', 'Surface Air Temperature (ºC)', expression('Surface Wind Speed (' * m ~ s^-1 * ')'), 'Snow Thickness (m)')
 
 # equilibrium variables: bs_snowdp, gice, gwtr, prsurf, qatm
 
