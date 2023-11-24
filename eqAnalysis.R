@@ -21,7 +21,7 @@ diagList <- c(diagList, 'oijl')
 
 ## Extract name of run ##
 runName <- list.files(getwd(), pattern = diagList[1])
-runName <- runName[!grepl('aijk|aijl', runName)]
+runName <- runName[!grepl('aijk|aijl|taij', runName)]
 runName <- runName[1]
 runName <- substr(runName,9,nchar(runName)-3)
 runName <- gsub(diagList[1], '', runName)
@@ -41,7 +41,7 @@ latList <- c(90, 78, 62, 46, 30, 14, 2, -14, -30, -46, -62, -78, -90)
 
 ## select variables to analyze equilibrium in aij, aijk, aijl, oil, and oijl diagnostics ## edit if you like
 allVar <- data.frame()
-allVar <- rbind(allVar, cbind('aij', c("gice", "gwtr", "incsw_toa", "landicefr", "prsurf", "qatm", "snowdp", "srtrnf_grnd", "tgrnd", "tsurf", "wsurf", "zsnow")))
+allVar <- rbind(allVar, cbind('aij', c("bs_snowdp", "gice", "gwtr", "incsw_toa", "landicefr", "prsurf", "qatm", "snowdp", "srf_wind_dir", "srtrnf_grnd", "tgrnd", "tsurf", "wsurf", "zsnow")))
 allVar <- rbind(allVar, cbind('aijl', c('q', 'rh', 'temp')))
 allVar <- rbind(allVar, cbind('aijk',c('tb')))
 allVar <- rbind(allVar, cbind('oij', c('oij_hbl', 'oij_mld')))
@@ -160,6 +160,7 @@ for(iDiag in 1:length(diagList)) {
                         for(iLat in 1:length(latList)) {
                             t <- subset(t_data, lat == latList[iLat])
                             tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], latList[iLat], paste0('OceanLayer_', aLayers[iLayer]), varList[iVar], mean(t$value, na.rm=TRUE), sd(t$value, na.rm=TRUE))
+                            colnames(tOut) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value')
                             outFrame <- rbind(outFrame, tOut)
                         }
                     }
