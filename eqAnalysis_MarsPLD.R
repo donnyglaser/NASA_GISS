@@ -18,7 +18,7 @@ dateList <- unique(as.numeric(dateList))
 YearI <- min(dateList)
 YearE <- max(dateList)
 MonList <- c('JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC')
-LatList <- c(78, 62, 46, 30, 14, 2, -14, -30, -46, -62, -78)
+LatList <- c(90, 78, 62, 46, 30, 14, 2, -14, -30, -46, -62, -78, -90)
 VarList <- c("axyp", "bs_snowdp", "gice", "gwtr", "incsw_toa", "landicefr", "mass_CO2cond", "prsurf", "qatm", "snowicefr", "srf_wind_dir", "srtrnf_grnd", "tgrnd", "tsurf", "wsurf", "zsnow")
 
 outFrame <- data.frame()
@@ -48,7 +48,7 @@ for(i in YearI:YearE) {
             t_data <- melt(t_data)
             colnames(t_data) <- c('lon', 'lat', 'value')
 
-            for(k in 1:11) {
+            for(k in 1:length(LatList)) {
 
                 t <- subset(t_data, lat == LatList[k])
                 meanV <- mean(t$value)
