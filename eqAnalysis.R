@@ -89,8 +89,8 @@ for(iDiag in 1:length(diagList)) {
             for(iVar in 1:length(varList)) {
                 t_data <- ncvar_get(nc_data, varid=varList[iVar,2])
 
-                ## need to add a bit here to add z levels ##
-                ## if else ##
+                print(paste0(iDiag, ', ', iYear, ', ', iMon, ', ', iVar))
+
                 if(diagList[iDiag] %in% 'aij') {
                     ## surface layer only ##
                     colnames(t_data) <- seq(-90,90,4)
