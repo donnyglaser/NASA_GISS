@@ -86,7 +86,7 @@ for(iDiag in 1:length(diagList)) {
             nc_data <- nc_open(fil)
 
             varList <- subset(allVar, Diagnostic %in% diagList[iDiag])
-            for(iVar in 1:length(varList)) {
+            for(iVar in 1:nrow(varList)) {
                 t_data <- ncvar_get(nc_data, varid=varList[iVar,2])
 
                 print(paste0(iDiag, ', ', iYear, ', ', iMon, ', ', iVar))
