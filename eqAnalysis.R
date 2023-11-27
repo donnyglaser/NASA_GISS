@@ -134,14 +134,14 @@ for(iDiag in 1:length(diagList)) {
                 } else if(diagList[iDiag] %in% 'oijl') {
                     ## 13 ocean layers ##
                     for(iLayer in 1:length(oLayers)) {
-                        t_data <- t_data[,,oLayers[iLayer]]
-                        colnames(t_data) <- seq(-90,90,4)
-                        row.names(t_data) <- seq(-177.5,177.5,5)
-                        t_data <- melt(t_data)
-                        colnames(t_data) <- c('lon', 'lat', 'value')
+                        tDat <- t_data[,,oLayers[iLayer]]
+                        colnames(tDat) <- seq(-90,90,4)
+                        row.names(tDat) <- seq(-177.5,177.5,5)
+                        tDat <- melt(tDat)
+                        colnames(tDat) <- c('lon', 'lat', 'value')
 
                         for(iLat in 1:length(latList)) {
-                            t <- subset(t_data, lat == latList[iLat])
+                            t <- subset(tDat, lat == latList[iLat])
                             tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], latList[iLat], paste0('OceanLayer_', oLayers[iLayer]), varList[iVar], mean(t$value, na.rm=TRUE), sd(t$value, na.rm=TRUE))
                             colnames(tOut) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value')
                             outFrame <- rbind(outFrame, tOut)
@@ -151,14 +151,15 @@ for(iDiag in 1:length(diagList)) {
                 } else { ## aijk and aijk
                     ## 40 atmos layers ##
                     for(iLayer in 1:length(aLayers)) {
-                        t_data <- t_data[,,aLayers[iLayer]]
-                        colnames(t_data) <- seq(-90,90,4)
-                        row.names(t_data) <- seq(-177.5,177.5,5)
-                        t_data <- melt(t_data)
-                        colnames(t_data) <- c('lon', 'lat', 'value')
+                        print(iLayer)
+                        tDat <- t_data[,,aLayers[iLayer]]
+                        colnames(tDat) <- seq(-90,90,4)
+                        row.names(tDat) <- seq(-177.5,177.5,5)
+                        tDat <- melt(tDat)
+                        colnames(tDat) <- c('lon', 'lat', 'value')
 
                         for(iLat in 1:length(latList)) {
-                            t <- subset(t_data, lat == latList[iLat])
+                            t <- subset(tDat, lat == latList[iLat])
                             tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], latList[iLat], paste0('OceanLayer_', aLayers[iLayer]), varList[iVar], mean(t$value, na.rm=TRUE), sd(t$value, na.rm=TRUE))
                             colnames(tOut) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value')
                             outFrame <- rbind(outFrame, tOut)
