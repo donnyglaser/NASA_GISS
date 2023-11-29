@@ -45,6 +45,7 @@ if(length(list.files(getwd(), pattern='STOP_FLAG.rds')) > 0) {
     outFrame <- readRDS(outFileName)
     diagI <- iTab[1]
     YearI <- iTab[2]
+    YearE <- max(dateList)
     MonI <- iTab[3]
     VarI <- iTab[4] + 1
     print('TEMPORARY = TRUE')
@@ -200,20 +201,27 @@ while(goFlag == TRUE) {
                     saveRDS(iTab, file = 'Temporary_IterationVariables.rds')
 
                     colnames(outFrame) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value') 
-                    outFrame[,c(2,5,7:8)] <- apply(outFrame[,c(2,5,8:9)], 2, as.numeric)
+                    outFrame[,c(2,5,8:9)] <- apply(outFrame[,c(2,5,8:9)], 2, as.numeric)
                     outFrame <- outFrame %>% mutate(Time = as.POSIXct(paste0('00', Year, '-', Month_Num, '-', 01, ' ', 00, ':', 00, ':', 00), format='%Y-%m-%d %H:%M:%OS'))
 
                     saveRDS(outFrame, file = paste0(runName, '_Equilibrium_', format(Sys.time(), "%y%m%d"), '.rds'))
                     outFrameName <- saveRDS(paste0(runName, '_Equilibrium_', format(Sys.time(), "%y%m%d"), '.rds'), 'Temporary_TableFileName.rds')
 
                     goFlag <- FALSE
+                    break
                 }
             }
+            if(goFlag == FALSE) {
+                break
+            }
         }
+        if(goFlag == FALSE) {
+                break
+            }
     }
 
     colnames(outFrame) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value') 
-    outFrame[,c(2,5,7:8)] <- apply(outFrame[,c(2,5,8:9)], 2, as.numeric)
+    outFrame[,c(2,5,8:9)] <- apply(outFrame[,c(2,5,8:9)], 2, as.numeric)
     outFrame <- outFrame %>% mutate(Time = as.POSIXct(paste0('00', Year, '-', Month_Num, '-', 01, ' ', 00, ':', 00, ':', 00), format='%Y-%m-%d %H:%M:%OS'))
 
     saveRDS(outFrame, file = paste0(runName, '_Equilibrium_', format(Sys.time(), "%y%m%d"), '.rds'))
