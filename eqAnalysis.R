@@ -53,16 +53,21 @@ if(length(list.files(getwd(), pattern='STOP_FLAG.rds')) > 0) {
         if(YearI == max(dateList)) {
             if(diagI == length(diagList)) {
                 goFlag <- FALSE
+                print('1')
             } else {
+                diagI <- diagI + 1
                 YearI <- 1
                 MonI <- 1
+                print('2')
             }
         } else {
             YearI <- YearI + 1
             MonI <- 1
+            print('3')
         }
     } else {
         MonI <- iTab[3] + 1
+        print('4')
     }
     print('TEMPORARY = TRUE')
 } else {
@@ -218,10 +223,9 @@ while(goFlag == TRUE) {
 
                     colnames(outFrame) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value') 
                     outFrame[,c(2,5,8:9)] <- apply(outFrame[,c(2,5,8:9)], 2, as.numeric)
-                    outFrame <- outFrame %>% mutate(Time = as.POSIXct(paste0('00', Year, '-', Month_Num, '-', 01, ' ', 00, ':', 00, ':', 00), format='%Y-%m-%d %H:%M:%OS'))
 
-                    saveRDS(outFrame, file = paste0(runName, '_Equilibrium_', format(Sys.time(), "%y%m%d"), '.rds'))
-                    outFrameName <- saveRDS(paste0(runName, '_Equilibrium_', format(Sys.time(), "%y%m%d"), '.rds'), 'Temporary_TableFileName.rds')
+                    saveRDS(outFrame, file = paste0(runName, '_EqPARTIAL_', format(Sys.time(), "%y%m%d"), '.rds'))
+                    saveRDS(paste0(runName, '_EqPARTIAL_', format(Sys.time(), "%y%m%d"), '.rds'), file = 'Temporary_TableFileName.rds')
 
                     goFlag <- FALSE
                     break
