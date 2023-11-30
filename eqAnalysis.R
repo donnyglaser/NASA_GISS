@@ -47,7 +47,6 @@ if(length(list.files(getwd(), pattern='STOP_FLAG.rds')) > 0) {
     YearI <- iTab[2]
     YearE <- max(dateList)
     MonI <- iTab[3]
-    VarI <- iTab[4] + 1
     print('TEMPORARY = TRUE')
 } else {
     outFrame <- data.frame()
@@ -111,7 +110,7 @@ while(goFlag == TRUE) {
                 nc_data <- nc_open(fil)
 
                 varList <- subset(allVar, Diagnostic %in% diagList[iDiag])
-                for(iVar in VarI:nrow(varList)) {
+                for(iVar in 1:nrow(varList)) {
                     t_data <- ncvar_get(nc_data, varid=varList[iVar,2])
 
                     print(paste0(iDiag, ', ', iYear, ', ', iMon, ', ', iVar))
@@ -197,7 +196,7 @@ while(goFlag == TRUE) {
                 if(as.numeric(difftime(Sys.time(),startTime,units='hours')) > 11.3) {
                     print('Time > 11.3')
 
-                    iTab <- c(iDiag, iYear, iMon, iVar)
+                    iTab <- c(iDiag, iYear, iMon)
                     saveRDS(iTab, file = 'Temporary_IterationVariables.rds')
 
                     colnames(outFrame) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value') 
