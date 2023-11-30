@@ -34,6 +34,8 @@ dateList <- substr(dateList, 4, 7)
 dateList <- unique(as.numeric(dateList))
 dateList <- dateList[!is.na(dateList)]
 
+
+
 ## check to see if this is the first run of analysis ##
 if(length(list.files(getwd(), pattern='STOP_FLAG.rds')) > 0) {
     goFlag <- FALSE
@@ -46,7 +48,22 @@ if(length(list.files(getwd(), pattern='STOP_FLAG.rds')) > 0) {
     diagI <- iTab[1]
     YearI <- iTab[2]
     YearE <- max(dateList)
-    MonI <- iTab[3]
+    if(iTab[3] == 12) {
+        MonI <- 1
+        if(YearI == max(dateList)) {
+            if(diagI == length(diagList)) {
+                goFlag <- FALSE
+            } else {
+                YearI <- 1
+                MonI <- 1
+            }
+        } else {
+            YearI <- YearI + 1
+            MonI <- 1
+        }
+    } else {
+        MonI <- iTab[3] + 1
+    }
     print('TEMPORARY = TRUE')
 } else {
     outFrame <- data.frame()
