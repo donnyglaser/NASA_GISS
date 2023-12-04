@@ -93,6 +93,7 @@ allVar <- rbind(allVar, cbind('aijk',c('tb')))
 allVar <- rbind(allVar, cbind('oij', c('oij_hbl', 'oij_mld')))
 allVar <- rbind(allVar, cbind('oijl', c('heat', 'pot_temp', 'salt')))
 colnames(allVar) <- c('Diagnostic', 'Variable')
+outNames <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Diagnostic', 'Variable', 'Layer', 'Mean_Value', 'SD_Value')
 
 ## select atmos and ocean layers ##  edit if you like
 aLayers <- c(1, 2, 4, 9, 14, 26, 35, 39)
@@ -146,21 +147,21 @@ while(goFlag == TRUE) {
 
                         for(iLat in 1:length(latList)) {
                             t <- subset(t_data, lat == latList[iLat])
-                            tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], latList[iLat], 'AtmosSurface', varList[iVar,2], mean(t$value, na.rm=TRUE), sd(t$value, na.rm=TRUE))
-                            colnames(tOut) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value')
+                            tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], latList[iLat], diagList[iDiag], varList[iVar,2], 'AtmosSurface', mean(t$value, na.rm=TRUE), sd(t$value, na.rm=TRUE))
+                            colnames(tOut) <- outNames
                             outFrame <- rbind(outFrame, tOut)
                         }
 
                         ## Global and Hemisphere Averages ##
                         hemiData <- ncvar_get(nc_data, varid=paste0(varList[iVar,2], '_hemis'))
-                        tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], 'SouthernHemisphere', 'AtmosSurface', varList[iVar,2], hemiData[1], 0)
-                        colnames(tOut) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value')
+                        tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], 'SouthernHemisphere', diagList[iDiag], varList[iVar,2], 'AtmosSurface', hemiData[1], 0)
+                        colnames(tOut) <- outNames
                         outFrame <- rbind(outFrame, tOut)
-                        tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], 'NorthernHemisphere', 'AtmosSurface', varList[iVar,2], hemiData[2], 0)
-                        colnames(tOut) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value')
+                        tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], 'NorthernHemisphere', diagList[iDiag], varList[iVar,2], 'AtmosSurface', hemiData[2], 0)
+                        colnames(tOut) <- outNames
                         outFrame <- rbind(outFrame, tOut)
-                        tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], 'Global', 'AtmosSurface', varList[iVar,2], hemiData[3], 0)
-                        colnames(tOut) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value')
+                        tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], 'Global', diagList[iDiag], varList[iVar,2], 'AtmosSurface', hemiData[3], 0)
+                        colnames(tOut) <- outNames
                         outFrame <- rbind(outFrame, tOut)
 
                     } else if(diagList[iDiag] %in% 'oij') {
@@ -172,8 +173,8 @@ while(goFlag == TRUE) {
 
                         for(iLat in 1:length(latList)) {
                             t <- subset(t_data, lat == latList[iLat])
-                            tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], latList[iLat], 'OceanSurface', varList[iVar,2], mean(t$value, na.rm=TRUE), sd(t$value, na.rm=TRUE))
-                            colnames(tOut) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value')
+                            tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], latList[iLat], diagList[iDiag], varList[iVar,2], 'OceanSurface', mean(t$value, na.rm=TRUE), sd(t$value, na.rm=TRUE))
+                            colnames(tOut) <- outNames
                             outFrame <- rbind(outFrame, tOut)
                         }
 
@@ -188,8 +189,8 @@ while(goFlag == TRUE) {
 
                             for(iLat in 1:length(latList)) {
                                 t <- subset(tDat, lat == latList[iLat])
-                                tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], latList[iLat], paste0('OceanLayer_', oLayers[iLayer]), varList[iVar,2], mean(t$value, na.rm=TRUE), sd(t$value, na.rm=TRUE))
-                                colnames(tOut) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value')
+                                tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], latList[iLat], diagList[iDiag], varList[iVar,2], paste0('OceanLayer_', oLayers[iLayer]), mean(t$value, na.rm=TRUE), sd(t$value, na.rm=TRUE))
+                                colnames(tOut) <- outNames
                                 outFrame <- rbind(outFrame, tOut)
                             }
                         }
@@ -206,8 +207,8 @@ while(goFlag == TRUE) {
 
                             for(iLat in 1:length(latList)) {
                                 t <- subset(tDat, lat == latList[iLat])
-                                tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], latList[iLat], paste0('OceanLayer_', aLayers[iLayer]), varList[iVar,2], mean(t$value, na.rm=TRUE), sd(t$value, na.rm=TRUE))
-                                colnames(tOut) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value')
+                                tOut <- cbind(runName, iYear, sprintf('%02s', iMon), monList[iMon], latList[iLat], diagList[iDiag], varList[iVar,2], paste0('OceanLayer_', aLayers[iLayer]), mean(t$value, na.rm=TRUE), sd(t$value, na.rm=TRUE))
+                                colnames(tOut) <- outNames
                                 outFrame <- rbind(outFrame, tOut)
                             }
                         }
@@ -221,29 +222,35 @@ while(goFlag == TRUE) {
                     iTab <- c(iDiag, iYear, iMon)
                     saveRDS(iTab, file = 'Temporary_IterationVariables.rds')
 
-                    colnames(outFrame) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value') 
-                    outFrame[,c(2,5,8:9)] <- apply(outFrame[,c(2,5,8:9)], 2, as.numeric)
+                    colnames(tOut) <- outNames
+                    outFrame[,c(2,5,9:10)] <- apply(outFrame[,c(2,5,9:10)], 2, as.numeric)
 
                     saveRDS(outFrame, file = paste0(runName, '_EqPARTIAL_', format(Sys.time(), "%y%m%d"), '.rds'))
                     saveRDS(paste0(runName, '_EqPARTIAL_', format(Sys.time(), "%y%m%d"), '.rds'), file = 'Temporary_TableFileName.rds')
 
+                    print('saved partial')
+
                     goFlag <- FALSE
+                    print('go = FALSE')
                     break
                 }
             }
             if(goFlag == FALSE) {
+                print('break')
                 break
             }
         }
         if(goFlag == FALSE) {
-                break
+            print('break')
+            break
             }
     }
-
-    colnames(outFrame) <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Layer', 'Variable', 'Mean_Value', 'SD_Value') 
-    outFrame[,c(2,5,8:9)] <- apply(outFrame[,c(2,5,8:9)], 2, as.numeric)
+    print('Final Save')
+    colnames(tOut) <- outNames 
+    outFrame[,c(2,5,9:10)] <- apply(outFrame[,c(2,5,9:10)], 2, as.numeric)
     outFrame <- outFrame %>% mutate(Time = as.POSIXct(paste0('00', Year, '-', Month_Num, '-', 01, ' ', 00, ':', 00, ':', 00), format='%Y-%m-%d %H:%M:%OS'))
 
     saveRDS(outFrame, file = paste0(runName, '_Equilibrium_', format(Sys.time(), "%y%m%d"), '.rds'))
     saveRDS('STOP', 'STOP_FLAG.rds')
+    goFlag <- FALSE
 }
