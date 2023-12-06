@@ -99,8 +99,8 @@ outNames <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Diagnost
 aLayers <- c(1, 2, 4, 9, 14, 26, 35, 39)
 oLayers <- c(1, 2, 3, 8, 13)
 
-while(goFlag == TRUE) {
-    print('goFlag = TRUE')
+if(goFlag == True) {
+    print('goFlag = TRUE; main loop')
     for(iDiag in diagI:length(diagList)) {
         diagFiles <- list.files(getwd(), pattern = paste0(diagList[iDiag], runName))
 
@@ -243,8 +243,11 @@ while(goFlag == TRUE) {
         if(goFlag == FALSE) {
             print('break')
             break
-            }
+        }
     }
+}
+
+if(goFlag == FALSE) {
     print('Final Save')
     colnames(tOut) <- outNames 
     outFrame[,c(2,5,9:10)] <- apply(outFrame[,c(2,5,9:10)], 2, as.numeric)
@@ -253,4 +256,6 @@ while(goFlag == TRUE) {
     saveRDS(outFrame, file = paste0(runName, '_Equilibrium_', format(Sys.time(), "%y%m%d"), '.rds'))
     saveRDS('STOP', 'STOP_FLAG.rds')
     goFlag <- FALSE
+} else {
+    print('Skip Final Save')
 }
