@@ -99,7 +99,7 @@ outNames <- c('Run_ID', 'Year', 'Month_Num', 'Month_Name', 'Latitude', 'Diagnost
 aLayers <- c(1, 2, 4, 9, 14, 26, 35, 39)
 oLayers <- c(1, 2, 3, 8, 13)
 
-if(goFlag == True) {
+if(goFlag == TRUE) {
     print('goFlag = TRUE; main loop')
     for(iDiag in diagI:length(diagList)) {
         diagFiles <- list.files(getwd(), pattern = paste0(diagList[iDiag], runName))
@@ -247,7 +247,7 @@ if(goFlag == True) {
     }
 }
 
-if(goFlag == FALSE) {
+if(goFlag == TRUE) {
     print('Final Save')
     colnames(tOut) <- outNames 
     outFrame[,c(2,5,9:10)] <- apply(outFrame[,c(2,5,9:10)], 2, as.numeric)
