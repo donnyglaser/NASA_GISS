@@ -48,6 +48,9 @@ if(length(list.files(getwd(), pattern='STOP_FLAG.rds')) > 0) {
     diagI <- iTab[1]
     YearI <- iTab[2]
     YearE <- max(dateList)
+    file.remove(outFileName)
+    file.remove('Temporary_IterationVariables.rds')
+    file.remove('Temporary_TableFileName.rds')
     if(iTab[3] == 12) {
         MonI <- 1
         if(YearI == max(dateList)) {
@@ -256,6 +259,7 @@ if(goFlag == TRUE) {
     saveRDS(outFrame, file = paste0(runName, '_Equilibrium_', format(Sys.time(), "%y%m%d"), '.rds'))
     saveRDS('STOP', 'STOP_FLAG.rds')
     goFlag <- FALSE
+    ## maybe add delete partial file here??
 } else {
     print('Skip Final Save')
 }
