@@ -51,27 +51,6 @@ if(length(list.files(getwd(), pattern='STOP_FLAG.rds')) > 0) {
     file.remove(outFileName)
     file.remove('Temporary_IterationVariables.rds')
     file.remove('Temporary_TableFileName.rds')
-    if(iTab[3] == 12) {
-        MonI <- 1
-        if(YearI == max(dateList)) {
-            if(diagI == length(diagList)) {
-                goFlag <- FALSE
-                print('1')
-            } else {
-                diagI <- diagI + 1
-                YearI <- 1
-                MonI <- 1
-                print('2')
-            }
-        } else {
-            YearI <- YearI + 1
-            MonI <- 1
-            print('3')
-        }
-    } else {
-        MonI <- iTab[3] + 1
-        print('4')
-    }
     print('TEMPORARY = TRUE')
 } else {
     outFrame <- data.frame()
@@ -91,8 +70,8 @@ latList <- c(90, 78, 62, 46, 30, 14, 2, -14, -30, -46, -62, -78, -90)
 ## select variables to analyze equilibrium in aij, aijk, aijl, oil, and oijl diagnostics ## edit if you like
 allVar <- data.frame()
 allVar <- rbind(allVar, cbind('aij', c("bs_snowdp", "gice", "gwtr", "incsw_toa", "landicefr", "prsurf", "qatm", "snowdp", "srf_wind_dir", "srtrnf_grnd", "tgrnd", "tsurf", "wsurf", "zsnow")))
-allVar <- rbind(allVar, cbind('aijl', c('q', 'rh', 'temp')))
 allVar <- rbind(allVar, cbind('aijk',c('tb')))
+allVar <- rbind(allVar, cbind('aijl', c('q', 'rh', 'temp')))
 allVar <- rbind(allVar, cbind('oij', c('oij_hbl', 'oij_mld')))
 allVar <- rbind(allVar, cbind('oijl', c('heat', 'pot_temp', 'salt')))
 colnames(allVar) <- c('Diagnostic', 'Variable')
@@ -129,7 +108,7 @@ if(goFlag == TRUE) {
                 monEnd <- 12
             }
 
-            for(iMon in MonI:monEnd) {
+            for(iMon in 1:monEnd) {
                 tFile <- yearL[grepl(monList[iMon], yearL)]
 
                 fil <- paste0(getwd(), '/', tFile)
@@ -141,7 +120,7 @@ if(goFlag == TRUE) {
 
                     print(paste0(iDiag, ', ', iYear, ', ', iMon, ', ', iVar))
 
-                    if(diagList[iDiag] %in% 'aij') {
+                    if(diagList[iDiag] == 'aij') {
                         ## surface layer only ##
                         colnames(t_data) <- seq(-90,90,4)
                         row.names(t_data) <- seq(-177.5,177.5,5)
@@ -167,7 +146,7 @@ if(goFlag == TRUE) {
                         colnames(tOut) <- outNames
                         outFrame <- rbind(outFrame, tOut)
 
-                    } else if(diagList[iDiag] %in% 'oij') {
+                    } else if(diagList[iDiag] == 'oij') {
                         ## surface layer only ##
                         colnames(t_data) <- seq(-90,90,4)
                         row.names(t_data) <- seq(-177.5,177.5,5)
@@ -181,9 +160,10 @@ if(goFlag == TRUE) {
                             outFrame <- rbind(outFrame, tOut)
                         }
 
-                    } else if(diagList[iDiag] %in% 'oijl') {
+                    } else if(diagList[iDiag] == 'oijl') {
                         ## 13 ocean layers ##
                         for(iLayer in 1:length(oLayers)) {
+                            print(iLayer)
                             tDat <- t_data[,,oLayers[iLayer]]
                             colnames(tDat) <- seq(-90,90,4)
                             row.names(tDat) <- seq(-177.5,177.5,5)
@@ -198,7 +178,7 @@ if(goFlag == TRUE) {
                             }
                         }
 
-                    } else { ## aijk and aijk
+                    } else { ## aijl and aijk
                         ## 40 atmos layers ##
                         for(iLayer in 1:length(aLayers)) {
                             print(iLayer)
@@ -218,15 +198,14 @@ if(goFlag == TRUE) {
                     }
                 }
                 nc_close(nc_data)
+            }
+            if(as.numeric(difftime(Sys.time(),startTime,units='hours')) > 11.5) {
+                    print('Time > 11.5')
 
-                if(as.numeric(difftime(Sys.time(),startTime,units='hours')) > 11.3) {
-                    print('Time > 11.3')
+                    saveRDS(c(iDiag, iYear), file = 'Temporary_IterationVariables.rds')
 
-                    iTab <- c(iDiag, iYear, iMon)
-                    saveRDS(iTab, file = 'Temporary_IterationVariables.rds')
-
-                    colnames(tOut) <- outNames
-                    outFrame[,c(2,5,9:10)] <- apply(outFrame[,c(2,5,9:10)], 2, as.numeric)
+                    colnames(outFrame) <- outNames
+                    outFrame[,c(2:3,9:10)] <- apply(outFrame[,c(2:3,9:10)], 2, as.numeric)
 
                     saveRDS(outFrame, file = paste0(runName, '_EqPARTIAL_', format(Sys.time(), "%y%m%d"), '.rds'))
                     saveRDS(paste0(runName, '_EqPARTIAL_', format(Sys.time(), "%y%m%d"), '.rds'), file = 'Temporary_TableFileName.rds')
@@ -236,11 +215,6 @@ if(goFlag == TRUE) {
                     goFlag <- FALSE
                     print('go = FALSE')
                     break
-                }
-            }
-            if(goFlag == FALSE) {
-                print('break')
-                break
             }
         }
         if(goFlag == FALSE) {
@@ -253,7 +227,7 @@ if(goFlag == TRUE) {
 if(goFlag == TRUE) {
     print('Final Save')
     colnames(tOut) <- outNames 
-    outFrame[,c(2,5,9:10)] <- apply(outFrame[,c(2,5,9:10)], 2, as.numeric)
+    outFrame[,c(2:3,9:10)] <- apply(outFrame[,c(2:3,9:10)], 2, as.numeric)
     outFrame <- outFrame %>% mutate(Time = as.POSIXct(paste0('00', Year, '-', Month_Num, '-', 01, ' ', 00, ':', 00, ':', 00), format='%Y-%m-%d %H:%M:%OS'))
 
     saveRDS(outFrame, file = paste0(runName, '_Equilibrium_', format(Sys.time(), "%y%m%d"), '.rds'))
