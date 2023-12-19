@@ -199,7 +199,7 @@ if(goFlag == TRUE) {
                 }
                 nc_close(nc_data)
             }
-            if(as.numeric(difftime(Sys.time(),startTime,units='hours')) > 11.5) {
+            if(as.numeric(difftime(Sys.time(),startTime,units='hours')) > 11.25) {
                     print('Time > 11.5')
 
                     saveRDS(c(iDiag, iYear), file = 'Temporary_IterationVariables.rds')
