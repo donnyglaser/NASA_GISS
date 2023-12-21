@@ -217,6 +217,7 @@ if(goFlag == TRUE) {
                     break
             }
         }
+        YearI <- 1
         if(goFlag == FALSE) {
             print('break')
             break
