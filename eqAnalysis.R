@@ -46,7 +46,7 @@ if(length(list.files(getwd(), pattern='STOP_FLAG.rds')) > 0) {
     outFileName <- readRDS('Temporary_TableFileName.rds')
     outFrame <- readRDS(outFileName)
     diagI <- iTab[1]
-    YearI <- iTab[2]
+    YearI <- iTab[2] + 1
     YearE <- max(dateList)
     file.remove(outFileName)
     file.remove('Temporary_IterationVariables.rds')
