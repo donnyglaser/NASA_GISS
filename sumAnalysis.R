@@ -11,18 +11,23 @@ library(reshape2)
 library(tidyverse)
 
 
-aijList <- list.files(getwd(), pattern = c('ANN', 'aij'))
-oijlList <- list.files(getwd(), pattern = c('ANN', 'oij'))
+aijList <- list.files(getwd(), pattern = '.aij')
+aijList <- aijList[grep('ANN', aijList)]
+oijlList <- list.files(getwd(), pattern = '.oijl')
+oijlList <- oijlList[grep('ANN', oijlList)]
 
 aijDiag <- c('tsurf', 'gwtr', 'grnd_alb', 'qatm', 'snowicefr', 'plan_alb', 'prec', 'pcldt')
-oijlDiag <- 'pot_temp'
+oijlDiag <- c('pot_temp')
 
-dzoc1 <- 12 # depth of first ocean layer
+#dzoc1 <- 12 # depth of first ocean layer
 
 sumTab <- data.frame()
 plotTab <- data.frame()
 for(iaij in 1:length(aijList)) {
     nc_data <- nc_open(aijList[iaij])
+
+    runName <- str_split(aijList[iaij], 'aij')[[1]][[2]]
+    runName <- str_split(runName, '.nc')[[1]][1]
 
     axypTab <- ncvar_get(nc_data, varid='axyp')
     colnames(axypTab) <- seq(-90,90,4)
@@ -33,6 +38,7 @@ for(iaij in 1:length(aijList)) {
     axypTab <- subset(axypTab, lat > -90 & lat < 90)
     axypTab <- rbind(axypTab, axypPole)
     globalArea <- sum(axypTab$value)
+    #saveRDS(axypTab, file = paste0('GridArea_', runName, '_', format(Sys.time(), "%y%m%d"), '.rds'))
 
     ocnTab <- ncvar_get(nc_data, varid='ocnfr')
     colnames(ocnTab) <- seq(-90,90,4)
@@ -50,8 +56,7 @@ for(iaij in 1:length(aijList)) {
     landArea <- sum(landTab$axyp)
     landTab <- landTab %>% mutate(axyp_pct = axyp / landArea)
 
-    runName <- str_split(aijList[iaij], 'aij')[[1]][[2]]
-    runName <- str_split(runName, '.nc')[[1]][1]
+    
 
     if(grepl('aqua', runName)) {
         runAng <- 'NA'
@@ -63,7 +68,6 @@ for(iaij in 1:length(aijList)) {
         runAng <- str_split(runAng, 'x')[[1]][1]
     }
 
-    plotOut <- data.frame()
     for(ivar in 1:length(aijDiag)) {
         allData <- ncvar_get(nc_data, varid=aijDiag[ivar])
         hemiData <- ncvar_get(nc_data, varid=paste0(aijDiag[ivar], '_hemis'))
@@ -73,8 +77,8 @@ for(iaij in 1:length(aijList)) {
         allData <- melt(allData)
         colnames(allData) <- c('lon', 'lat', 'value')
         plotData <- cbind(runName, runAng, runWC, aijDiag[ivar], allData)
-        plotTab <- rbind(plotTab, plotData)
         colnames(plotData)[1:4] <- c('Run', 'Angle', 'WaterContent', 'Diagnostic')
+        plotTab <- rbind(plotTab, plotData)
         allPole <- subset(allData, (lat == -90 & lon == -177.5) | (lat == 90 & lon == -177.5))
         allData <- subset(allData, lat > -90 & lat < 90)
         allData <- rbind(allData, allPole)
@@ -116,10 +120,148 @@ for(iaij in 1:length(aijList)) {
         tempOut <- cbind(runName, runAng, runWC, aijDiag[ivar], 'HiLand', sum(hiData$meanValue), sum(hiData$axyp))
         colnames(tempOut) <- c('Run', 'Angle', 'WaterContent', 'Diagnostic', 'Region', 'Value', 'Area')
         sumTab <- rbind(sumTab, tempOut)
+    }
+    ### CALCULATE ARIDITY INDEX ### (prec / pot_evap)
 
-        ## extract and save plotting data here?? ##
+    precHemi <- ncvar_get(nc_data, varid='prec_hemis')
+    evapHemi <- ncvar_get(nc_data, varid='pot_evap_hemis')
+    hemiData <- precHemi / evapHemi
+    precData <- ncvar_get(nc_data, varid='prec')
+    evapData <- ncvar_get(nc_data, varid='pot_evap')
+    aridData <- precData / evapData
+
+    colnames(aridData) <- seq(-90,90,4)
+    row.names(aridData) <- seq(-177.5,177.5,5)
+    aridData <- melt(aridData)
+    colnames(aridData) <- c('lon', 'lat', 'value')
+    plotData <- cbind(runName, runAng, runWC, 'AridityIndex', aridData)
+    colnames(plotData)[1:4] <- c('Run', 'Angle', 'WaterContent', 'Diagnostic')
+    plotTab <- rbind(plotTab, plotData)
+    allPole <- subset(aridData, (lat == -90 & lon == -177.5) | (lat == 90 & lon == -177.5))
+    aridData <- subset(aridData, lat > -90 & lat < 90)
+    aridData <- rbind(aridData, allPole)
+
+    landData <- merge(aridData, landTab, by = c('lon', 'lat'), all.y = FALSE)
+    landData <- landData %>% mutate(meanValue = value * axyp_pct)
+    lowData <- subset(landData, lat >= -30 & lat <= 30)
+    lowArea <- sum(lowData$axyp)
+    lowData <- lowData %>% mutate(axyp_pct = (axyp / lowArea))
+    lowData <- lowData %>% mutate(meanValue = value * axyp_pct)
+    midData <- subset(landData, lat < -30 | lat > 30)
+    midData <- subset(midData, lat >= -62 & lat <= 62)
+    midArea <- sum(midData$axyp)
+    midData <- midData %>% mutate(axyp_pct = axyp / midArea)
+    midData <- midData %>% mutate(meanValue = value * axyp_pct)
+    hiData <- subset(landData, lat < -62 | lat > 62)
+    hiArea <- sum(hiData$axyp)
+    hiData <- hiData %>% mutate(axyp_pct = axyp / hiArea)
+    hiData <- hiData %>% mutate(meanValue = value * axyp_pct)
+
+    tempOut <- cbind(runName, runAng, runWC, 'AridityIndex', 'AllLand', sum(landData$meanValue), landArea)
+    colnames(tempOut) <- c('Run', 'Angle', 'WaterContent', 'Diagnostic', 'Region', 'Value', 'Area')
+    sumTab <- rbind(sumTab, tempOut)
+    tempOut <- cbind(runName, runAng, runWC, 'AridityIndex', 'LowLand', sum(lowData$meanValue), sum(lowData$axyp))
+    colnames(tempOut) <- c('Run', 'Angle', 'WaterContent', 'Diagnostic', 'Region', 'Value', 'Area')
+    sumTab <- rbind(sumTab, tempOut)
+    tempOut <- cbind(runName, runAng, runWC, 'AridityIndex', 'MidLand', sum(midData$meanValue), sum(midData$axyp))
+    colnames(tempOut) <- c('Run', 'Angle', 'WaterContent', 'Diagnostic', 'Region', 'Value', 'Area')
+    sumTab <- rbind(sumTab, tempOut)
+    tempOut <- cbind(runName, runAng, runWC, 'AridityIndex', 'HiLand', sum(hiData$meanValue), sum(hiData$axyp))
+    colnames(tempOut) <- c('Run', 'Angle', 'WaterContent', 'Diagnostic', 'Region', 'Value', 'Area')
+    sumTab <- rbind(sumTab, tempOut)
+    
+    nc_close(nc_data)
+}
+
+
+sumTab[,c(3,6:7)] <- apply(sumTab[,c(3,6:7)], 2, as.numeric)
+saveRDS(sumTab, file = paste0('SummaryData_TopoEns_aij_', format(Sys.time(), "%y%m%d"), '.rds'))
+plotTab[,c(3,5:7)] <- apply(plotTab[,c(3,5:7)], 2, as.numeric)
+saveRDS(plotTab, file = paste0('PlotData_TopoEns_aij_', format(Sys.time(), "%y%m%d"), '.rds'))
+
+
+########### THEN DO OIJL DATA ###########
+
+
+sumTab <- data.frame()
+plotTab <- data.frame()
+for(ioij in 1:length(oijlList)) {
+    nc_data <- nc_open(oijlList[ioij])
+    
+    runName <- str_split(oijlList[ioij], 'oijl')[[1]][[2]]
+    runName <- str_split(runName, '.nc')[[1]][1]
+
+    oxypTab <- ncvar_get(nc_data, varid='oxyp')
+    colnames(oxypTab) <- seq(-90,90,4)
+    row.names(oxypTab) <- seq(-177.5,177.5,5)
+    oxypTab <- melt(oxypTab)
+    colnames(oxypTab) <- c('lon', 'lat', 'value')
+    oxypPole <- subset(oxypTab, (lat == -90 & lon == -177.5) | (lat == 90 & lon == -177.5))
+    oxypTab <- subset(oxypTab, lat > -90 & lat < 90)
+    oxypTab <- rbind(oxypTab, oxypPole)
+    ocArea <- sum(oxypTab$value)
+
+    if(grepl('aqua', runName)) {
+        runAng <- 'NA'
+        runWC <- '100'
+    } else {
+        
+        runAng <- str_split(runName, '_')[[1]][2]
+        runWC <- str_split(runAng, 'x')[[1]][2]
+        runAng <- str_split(runAng, 'x')[[1]][1]
+    }
+
+    for(ivar in 1:length(oijlDiag)) {
+        allData <- ncvar_get(nc_data, varid=oijlDiag[ivar])
+        allData <- allData[,,1] ## only does surface layer (12 m)
+        colnames(allData) <- seq(-90,90,4)
+        row.names(allData) <- seq(-177.5,177.5,5)
+        allData <- melt(allData)
+        colnames(allData) <- c('lon', 'lat', 'value')
+        plotData <- cbind(runName, runAng, runWC, oijlDiag[ivar], allData)
+        colnames(plotData)[1:4] <- c('Run', 'Angle', 'WaterContent', 'Diagnostic')
+        plotTab <- rbind(plotTab, plotData)
+        allPole <- subset(allData, (lat == -90 & lon == -177.5) | (lat == 90 & lon == -177.5))
+        allData <- subset(allData, lat > -90 & lat < 90)
+        allData <- rbind(allData, allPole)
+        allData <- na.omit(allData)
+        allData <- merge(allData, oxypTab, by = c('lon', 'lat'), all.x = TRUE)
+        colnames(allData)[3:4] <- c('value', 'oxyp')
+        ocArea <- sum(allData$oxyp)
+        allData <- allData %>% mutate(oxyp_pct = oxyp / ocArea)
+        allData <- allData %>% mutate(meanValue = value * oxyp_pct)
+        lowData <- subset(allData, lat >= -30 & lat <= 30)
+        lowArea <- sum(lowData$oxyp)
+        lowData <- lowData %>% mutate(oxyp_pct = (oxyp / lowArea))
+        lowData <- lowData %>% mutate(meanValue = value * oxyp_pct)
+        midData <- subset(allData, lat < -30 | lat > 30)
+        midData <- subset(midData, lat >= -62 & lat <= 62)
+        midArea <- sum(midData$oxyp)
+        midData <- midData %>% mutate(oxyp_pct = oxyp / midArea)
+        midData <- midData %>% mutate(meanValue = value * oxyp_pct)
+        hiData <- subset(allData, lat < -62 | lat > 62)
+        hiArea <- sum(hiData$oxyp)
+        hiData <- hiData %>% mutate(oxyp_pct = oxyp / hiArea)
+        hiData <- hiData %>% mutate(meanValue = value * oxyp_pct)
+
+        tempOut <- cbind(runName, runAng, runWC, oijlDiag[ivar], 'AllOcean', sum(allData$meanValue), ocArea)
+        colnames(tempOut) <- c('Run', 'Angle', 'WaterContent', 'Diagnostic', 'Region', 'Value', 'Area')
+        sumTab <- rbind(sumTab, tempOut)
+        tempOut <- cbind(runName, runAng, runWC, oijlDiag[ivar], 'LowOcean', sum(lowData$meanValue), sum(lowData$oxyp))
+        colnames(tempOut) <- c('Run', 'Angle', 'WaterContent', 'Diagnostic', 'Region', 'Value', 'Area')
+        sumTab <- rbind(sumTab, tempOut)
+        tempOut <- cbind(runName, runAng, runWC, oijlDiag[ivar], 'MidOcean', sum(midData$meanValue), sum(midData$oxyp))
+        colnames(tempOut) <- c('Run', 'Angle', 'WaterContent', 'Diagnostic', 'Region', 'Value', 'Area')
+        sumTab <- rbind(sumTab, tempOut)
+        tempOut <- cbind(runName, runAng, runWC, oijlDiag[ivar], 'HiOcean', sum(hiData$meanValue), sum(hiData$oxyp))
+        colnames(tempOut) <- c('Run', 'Angle', 'WaterContent', 'Diagnostic', 'Region', 'Value', 'Area')
+        sumTab <- rbind(sumTab, tempOut)
 
     }
+    nc_close(nc_data)
 }
-saveRDS(sumTab, file = paste0('SummaryData_aij_', format(Sys.time(), "%y%m%d"), '.rds'))
-saveRDS(plotTab, file = paste0('PlotData_aij_', format(Sys.time(), "%y%m%d"), '.rds'))
+
+sumTab[,c(3,6:7)] <- apply(sumTab[,c(3,6:7)], 2, as.numeric)
+saveRDS(sumTab, file = paste0('SummaryData_TopoEns_oijl_', format(Sys.time(), "%y%m%d"), '.rds'))
+plotTab[,c(3,5:7)] <- apply(plotTab[,c(3,5:7)], 2, as.numeric)
+saveRDS(plotTab, file = paste0('PlotData_TopoEns_oijl_', format(Sys.time(), "%y%m%d"), '.rds'))
