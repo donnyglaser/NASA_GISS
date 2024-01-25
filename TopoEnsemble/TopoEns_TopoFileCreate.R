@@ -2,8 +2,10 @@
 ## have yet to test the 0% surface area topo files (no ocean cells) ##
 
 setwd('/Users/dmglaser/Documents/Research/NASA/ROCKE3DModel/Projects/Mars/MarsTopography/Paleo Mars')
-pctSurf <- readRDS('/Users/dmglaser/Documents/Research/NASA/ROCKE3DModel/Projects/Mars/MarsTopography/Paleo Mars/OceanSurfaceAreaTable_wGEL_231214.rds')
+#pctSurf <- readRDS('/Users/dmglaser/Documents/Research/NASA/ROCKE3DModel/Projects/Mars/MarsTopography/Paleo Mars/OceanSurfaceAreaTable_wGEL_231214.rds')
+pctSurf <- readRDS('OceanSurfaceAreaTable_wGEL_240125.rds')
 load("/Users/dmglaser/Documents/Research/NASA/ROCKE3DModel/Projects/Mars/MarsTopography/Paleo Mars/OIC_AverageFile_231018.Rda") # loads as OIC_all
+library(ncdf4)
 
 
 xvals <- seq(-177.5, 177.5, 5)
@@ -21,6 +23,7 @@ lono <- ncdim_def('lono', 'deg', xvals, create_dimvar=TRUE)
 lato <- ncdim_def('lato', 'deg', yvals, create_dimvar=TRUE)
 olayers <- data.frame(Layer = 1:13, Bottom = c(12, 30, 57, 98, 158, 249, 386, 591, 899, 1360, 2052, 3090, 4647), Mid = c(6, 21, 44, 77, 128, 204, 318, 488, 745, 1129, 1706, 2571, 3868))
 zoc <- ncdim_def('zoc', 'm', c(6, 21, 44, 77, 128, 204, 318, 488, 745, 1129, 1706, 2571, 3868))
+topoName <- data.frame(i = 1:5, RotationAngle = c(0, 22, 45, 60, 90))
 
 fileList <- c('mars_topo_trans0_paleo_C.nc', 'mars_topo_trans22_paleo_C.nc', 'mars_topo_trans45_paleo_C.nc', 'mars_topo_trans60_paleo_C.nc', 'mars_topo_trans90_paleo_C.nc')
 
@@ -204,6 +207,15 @@ for(ifile in 1:length(fileList)) {
             ncvar_put(template, varmo, mo)
             ncvar_put(template, vars, s)
             ncvar_put(template, varsz, sz)
+            nc_close(template)
+
+            file.copy('GLMELT_4X5.nomelt.nc', paste0('mars_GLMELT_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_NPoleOc.nc'), overwrite = FALSE)
+            template <- nc_open(paste0('mars_GLMELT_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_NPoleOc.nc'), write = TRUE)
+
+            ## vars ##
+            varmask <- template[["var"]][["mask"]]
+            ## add data ##
+            ncvar_put(template, varmask, focean)
             nc_close(template)
         }
     }
