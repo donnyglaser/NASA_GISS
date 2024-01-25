@@ -209,14 +209,13 @@ for(ifile in 1:length(fileList)) {
             ncvar_put(template, varsz, sz)
             nc_close(template)
 
-            file.copy('GLMELT_4X5.nomelt.nc', paste0('mars_GLMELT_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_NPoleOc.nc'), overwrite = FALSE)
-            template <- nc_open(paste0('mars_GLMELT_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_NPoleOc.nc'), write = TRUE)
+            file.copy('GLMELT_4X5.nomelt.nc', paste0('mars_GLmelt_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_NPoleOc.nc'), overwrite = FALSE)
+            template <- nc_open(paste0('mars_GLmelt_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_NPoleOc.nc'), write = TRUE)
 
             ## vars ##
             varmask <- template[["var"]][["mask"]]
             ## add data ##
             ncvar_put(template, varmask, focean)
-            nc_close(template)
         }
     }
 }
