@@ -4,7 +4,7 @@ diags=()
 ## Remove comment for the desired diagnostics ##
 
 # ATMOS #
-#diags+=("aij")
+diags+=("aij")
 #diags+=("aijk")
 #diags+=('aijl')
 #diags+=('taij')
@@ -25,7 +25,8 @@ diags=()
 
 # list all .acc files
 accAll=`ls ./*.acc*`
-x=${accAll[0]:13:1}
+runName=`ls ./JAN*.acc*.nc`
+x=${runName[0]:13:1}
 
 for ifile in $accAll ## this isnt working like I thought
 do
