@@ -2,7 +2,7 @@
 
 ##SBATCH --dependency=afterany:
 
-#SBATCH --ntasks-per-node=11
+#SBATCH --ntasks-per-node=1
 
 #SBATCH --time=12:00:00
 
