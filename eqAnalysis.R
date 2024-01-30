@@ -10,17 +10,31 @@ startTime <- Sys.time()
 goFlag <- TRUE
 
 diagList <- c()
-####################################
-### Comment unwanted diagnostics ###
-####################################
-# I think these are the best diagnostics for equilibrium analysis #
-## ATMOS ##
-diagList <- c(diagList, 'aij')
-diagList <- c(diagList, 'aijk')
-diagList <- c(diagList, 'aijl')
-## OCEAN ##
-diagList <- c(diagList, 'oij')
-diagList <- c(diagList, 'oijl')
+############################################
+### Check directory for diagnostic files ###
+############################################
+aij <- list.files(getwd(), pattern = 'aij')
+aij <- Filter(function(x) !any(grepl('aijk', x)), aij)
+aij <- Filter(function(x) !any(grepl('aijl', x)), aij)
+aij <- Filter(function(x) !any(grepl('taij', x)), aij)
+if(length(aij) > 0) {
+    diagList <- c(diagList, 'aij')
+}
+if(length(list.files(getwd(), pattern = 'aijk')) > 0) {
+    diagList <- c(diagList, 'aijk')
+}
+if(length(list.files(getwd(), pattern = 'aijl')) > 0) {
+    diagList <- c(diagList, 'aijl')
+}
+
+oij <- list.files(getwd(), pattern = 'oij')
+oij <- Filter(function(x) !any(grepl('oijl', x)), oij)
+if(length(oij) > 0) {
+    diagList <- c(diagList, 'oij')
+}
+if(length(list.files(getwd(), pattern = 'oijl')) > 0) {
+    diagList <- c(diagList, 'oijl')
+}
 
 ## Extract name of run ##
 runName <- list.files(getwd(), pattern = diagList[1])
