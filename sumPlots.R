@@ -8,11 +8,13 @@ library(reshape)
 
 ######### SUMMARY PLOTS #########
 
-aij <- readRDS(list.files(getwd(), pattern = 'SummaryData_TopoEns_aij'))
-oijl <- readRDS(list.files(getwd(), pattern = 'SummaryData_TopoEns_oijl'))
+aijList <- list.files(getwd(), pattern = 'SummaryData_TopoEns_aij')
+aij <- readRDS(aijList[length(aijList)])
+oijList <- list.files(getwd(), pattern = 'SummaryData_TopoEns_oijl')
+oijl <- readRDS(oijList[length(oijList)])
 
 angList <- c('NA',0,22,45,60,90)
-wcList <- c(0,10,20,30,40,50,100)
+wcList <- c(0,1,5,10,20,30,40,50,100)
 
 aijVar <- unique(aij$Diagnostic)
 aijReg <- unique(aij$Region)
