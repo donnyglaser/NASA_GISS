@@ -1,6 +1,8 @@
 ## this has been tested and created topo files that run correctly ##
 ## have yet to test the 0% surface area topo files (no ocean cells) ##
 
+library(mgc)
+
 setwd('/Users/dmglaser/Documents/Research/NASA/ROCKE3DModel/Projects/Mars/MarsTopography/Paleo Mars')
 pctSurf <- readRDS('/Users/dmglaser/Documents/Research/NASA/ROCKE3DModel/Projects/Mars/MarsTopography/Paleo Mars/OceanSurfaceAreaTable_wGEL_231214.rds')
 load("/Users/dmglaser/Documents/Research/NASA/ROCKE3DModel/Projects/Mars/MarsTopography/Paleo Mars/OIC_AverageFile_231018.Rda") # loads as OIC_all
@@ -100,6 +102,29 @@ for(ifile in 1:length(fileList)) {
             }
         }
 
+        ## GLmelt loop: identify large oceans for GLmelt mask ##
+        #library(mgc)
+
+        melt <- ConnCompLabel(as.matrix(focean))
+        #colnames(melt) <- seq(-90, 90, 4)
+        #row.names(melt) <- seq(-177.5, 177.5, 5)
+        melt <- melt(melt)
+        colnames(melt) <- c('Lon', 'Lat', 'nOcean')
+        melt <- subset(melt, nOcean > 0)
+        melt <- melt[order(melt[,3]), ]
+        GLmelt <- data.frame()
+        for(iocn in 1:length(unique(melt$nOcean))) {
+            tmelt <- subset(melt, nOcean == iocn)
+            if(nrow(tmelt) > 15) {
+                GLmelt <- rbind(GLmelt, tmelt)
+            }
+        }
+
+        GL <- array(data = 0, dim = c(72, 46))
+        for(igl in 1:nrow(GLmelt)) {
+            GL[GLmelt[igl,1], GLmelt[igl,2]] <- 1
+        }
+
         # fix pole issue: make all the polar cells the same and south pole = land
         if(zatmo[36,1] > 0) {
             zatmo[,1] <- zatmo[36,1]
@@ -134,31 +159,32 @@ for(ifile in 1:length(fileList)) {
             sz[,46,ilayer] <- sz[36,46,ilayer]
         }
 
-        if(isurf > 1) { # for runs with ocean, there needs to be an ocean cell at the N pole
-            if(focean[1,46] == 0) {
-                zatmo[1:72, 46] <- 0
-                fgrnd[1:72, 46] <- 0
-                focean[1:72, 46] <- 1
-                fgice[1:72, 46] <- 0
-                flake[1:72, 46] <- 0
-                hlake[1:72, 46] <- 0
-                zocean[1:72, 46] <- 591
+        # if(isurf > 1) { # for runs with ocean, there needs to be an ocean cell at the N pole
+        #     if(focean[1,46] == 0) {
+        #         zatmo[1:72, 46] <- 0
+        #         fgrnd[1:72, 46] <- 0
+        #         focean[1:72, 46] <- 1
+        #         fgice[1:72, 46] <- 0
+        #         flake[1:72, 46] <- 0
+        #         hlake[1:72, 46] <- 0
+        #         zocean[1:72, 46] <- 591
 
-                g[1:72, 46, 1:8] <- 83140 # 20ºC
-                g[1:72, 46, 9:13] <- 0 # 20ºC
-                gz[1:72, 46, 1:8] <- 0
-                for(ilayer in 1:8) {
-                    mo[1:72, 46, ilayer] <- OIC_all[ilayer, 3]
-                }
-                mo[1:72, 46, 9:13] <- 0
-                s[1:72, 46, 1:8] <- 0.035
-                s[1:72, 46, 9:13] <- 0
-                sz[1:72, 46, 1:8] <- 0
-            }
-        }
+        #         g[1:72, 46, 1:8] <- 83140 # 20ºC
+        #         g[1:72, 46, 9:13] <- 0 # 20ºC
+        #         gz[1:72, 46, 1:8] <- 0
+        #         for(ilayer in 1:8) {
+        #             mo[1:72, 46, ilayer] <- OIC_all[ilayer, 3]
+        #         }
+        #         mo[1:72, 46, 9:13] <- 0
+        #         s[1:72, 46, 1:8] <- 0.035
+        #         s[1:72, 46, 9:13] <- 0
+        #         sz[1:72, 46, 1:8] <- 0
+        #     }
+        # }
         
-        file.copy('TOPOZ72X46N.TEMPLATE.nc', paste0('mars_TOPO_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_NPoleOc.nc'), overwrite = FALSE)
-        template <- nc_open(paste0('mars_TOPO_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_NPoleOc.nc'), write = TRUE)
+
+        file.copy('TOPOZ72X46N.TEMPLATE.nc', paste0('mars_TOPO_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_paleo.nc'), overwrite = FALSE)
+        template <- nc_open(paste0('mars_TOPO_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_paleo.nc'), write = TRUE)
 
         ## vars ##
         varfgice <- template[["var"]][["fgice"]]
@@ -176,8 +202,8 @@ for(ifile in 1:length(fileList)) {
         nc_close(template)
 
         if(isurf > 1) {
-            file.copy('TOPO_OCZ72X46N.TEMPLATE.nc', paste0('mars_TOPO_OC_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_NPoleOc.nc'), overwrite = FALSE)
-            template <- nc_open(paste0('mars_TOPO_OC_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_NPoleOc.nc'), write = TRUE)
+            file.copy('TOPO_OCZ72X46N.TEMPLATE.nc', paste0('mars_TOPO_OC_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_paleo.nc'), overwrite = FALSE)
+            template <- nc_open(paste0('mars_TOPO_OC_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_paleo.nc'), write = TRUE)
 
             ## vars ##
             varo_zatmo <- template[["var"]][["zatmo"]]
@@ -189,8 +215,8 @@ for(ifile in 1:length(fileList)) {
             ncvar_put(template, var_zocean, zocean)
             nc_close(template)
 
-            file.copy('OIC4X5LD.TEMPLATE.nc', paste0('mars_OIC_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_NPoleOc.nc'), overwrite = FALSE)
-            template <- nc_open(paste0('mars_OIC_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_NPoleOc.nc'), write = TRUE)
+            file.copy('OIC4X5LD.TEMPLATE.nc', paste0('mars_OIC_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_paleo.nc'), overwrite = FALSE)
+            template <- nc_open(paste0('mars_OIC_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_paleo.nc'), write = TRUE)
 
             ## vars ##
             varg <- template[["var"]][["g"]]
@@ -204,6 +230,15 @@ for(ifile in 1:length(fileList)) {
             ncvar_put(template, varmo, mo)
             ncvar_put(template, vars, s)
             ncvar_put(template, varsz, sz)
+            nc_close(template)
+
+            file.copy('GLMELT_4X5.nomelt.nc', paste0('mars_GLmelt_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_paleo.nc'), overwrite = FALSE)
+            template <- nc_open(paste0('mars_GLmelt_trans_', topoName[ifile, 2], 'x', pctSurf[isurf, 1], '_paleo.nc'), write = TRUE)
+
+            ## vars ##
+            varmask <- template[["var"]][["mask"]]
+            ## add data ##
+            ncvar_put(template, varmask, GL)
             nc_close(template)
         }
     }
