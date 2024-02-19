@@ -93,4 +93,4 @@ colnames(gelTab)[2] <- 'GEL_m'
 pctSub <- cbind(pctSub, gelTab[,2])
 colnames(pctSub)[4] <- 'GEL_m'
 
-save(pctSub, file = 'OceanSurfaceAreaTable_wGEL_231106.Rda')
+save(pctSub, file = paste0('OceanSurfaceAreaTable_wGEL_', format(Sys.time(), "%y%m%d"), '.Rda'))
