@@ -40,7 +40,7 @@ for(ifile in 1:length(datList)) {
     maxTime <- max(data$Time2, na.rm = TRUE)
     
     for(ivar in 1:nrow(allVar)) {
-        sub <- subset(data, Variable %in% allVar[ivar])
+        sub <- subset(data, Variable %in% allVar[ivar,2])
         subLo <- subset(sub, Latitude %in% names(latLo))
         subMid <- subset(sub, Latitude %in% names(latMid))
         subHi <- subset(sub, Latitude %in% names(latHi))
@@ -64,7 +64,7 @@ for(ifile in 1:length(datList)) {
         scale_x_continuous(expand = expansion(), limits = c(-0.2, (maxTime+0.2)), breaks = seq(0,maxTime,round_any(maxTime/5, 0.1, f = round))) +
         scale_y_continuous(expand = expansion(mult = 0.15), breaks = waiver(), n.breaks = 3) + #expand = expansion(), limits = c(0, maxY), 
         xlab("Model Mars Years") + ## ~687 Earth days
-        ylab(varNames[ivar]) +
+        ylab(nameVar[ivar]) +
         theme(plot.title = element_text(hjust = 0.5, size = 21, face = "bold"), text = element_text(size = 18), axis.text.x = element_text(size = 16), aspect.ratio = 0.25, axis.line = element_line(color = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), panel.border = element_rect(color = "black", fill=NA, linewidth=2), legend.key=element_blank(), legend.key.height = unit(0.83, "inch"), plot.margin = margin(0.25, 0.25, 0.25, 0.25, "cm"), plot.tag.position = c(0.15, 0.02), axis.title.y.right = element_text(margin = margin(l = 83)), legend.position = c(1.07, 0.52), panel.spacing = unit(5, "mm"))
 
         ggsave(paste0(run, "_EqPlot_", allVar[ivar], '_LoFacet_', format(Sys.time(), "%y%m%d"), ".png"), height = 6.25, width = 5, unit = 'in', dpi = 300)
@@ -88,7 +88,7 @@ for(ifile in 1:length(datList)) {
         scale_x_continuous(expand = expansion(), limits = c(-0.2, (maxTime+0.2)), breaks = seq(0,maxTime,round_any(maxTime/5, 0.1, f = round))) +
         scale_y_continuous(expand = expansion(mult = 0.15), breaks = waiver(), n.breaks = 3) + #expand = expansion(), limits = c(0, maxY), 
         xlab("Model Mars Years") + ## ~687 Earth days
-        ylab(varNames[ivar]) +
+        ylab(nameVar[ivar]) +
         theme(plot.title = element_text(hjust = 0.5, size = 21, face = "bold"), text = element_text(size = 18), axis.text.x = element_text(size = 16), aspect.ratio = 0.25, axis.line = element_line(color = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), panel.border = element_rect(color = "black", fill=NA, linewidth=2), legend.key=element_blank(), legend.key.height = unit(0.83, "inch"), plot.margin = margin(0.25, 0.25, 0.25, 0.25, "cm"), plot.tag.position = c(0.15, 0.02), axis.title.y.right = element_text(margin = margin(l = 83)), legend.position = c(1.07, 0.52), panel.spacing = unit(5, "mm"))
 
         ggsave(paste0(run, "_EqPlot_", allVar[ivar], '_MidFacet_', format(Sys.time(), "%y%m%d"), ".png"), height = 6.25, width = 5, unit = 'in', dpi = 300)
@@ -113,7 +113,7 @@ for(ifile in 1:length(datList)) {
         scale_x_continuous(expand = expansion(), limits = c(-0.2, (maxTime+0.2)), breaks = seq(0,maxTime,round_any(maxTime/5, 0.1, f = round))) +
         scale_y_continuous(expand = expansion(mult = 0.15), breaks = waiver(), n.breaks = 3) + #expand = expansion(), limits = c(0, maxY), 
         xlab("Model Mars Years") + ## ~687 Earth days
-        ylab(varNames[ivar]) +
+        ylab(nameVar[ivar]) +
         theme(plot.title = element_text(hjust = 0.5, size = 21, face = "bold"), text = element_text(size = 18), axis.text.x = element_text(size = 16), aspect.ratio = 0.25, axis.line = element_line(color = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), panel.border = element_rect(color = "black", fill=NA, size=2), legend.key=element_blank(), legend.key.height = unit(0.83, "inch"), plot.margin = margin(0.25, 0.25, 0.25, 0.25, "cm"), plot.tag.position = c(0.15, 0.02), axis.title.y.right = element_text(margin = margin(l = 83)), legend.position = c(1.07, 0.52), panel.spacing = unit(5, "mm"))
 
         ggsave(paste0(run, "_EqPlot_", allVar[ivar], '_HiFacet_', format(Sys.time(), "%y%m%d"), ".png"), height = 7, width = 5, unit = 'in', dpi = 300)
