@@ -8,6 +8,8 @@ library(reshape)
 
 startTime <- Sys.time()
 goFlag <- TRUE
+janOnly <- FALSE 
+janOnly <- TRUE # comment this line out if you want to calculate the average of all months
 
 diagList <- c()
 ############################################
@@ -120,6 +122,10 @@ if(goFlag == TRUE) {
                 monEnd <- (length(yearL)) - 1
             } else {
                 monEnd <- 12
+            }
+
+            if(janOnly) {
+                monEnd <- 1
             }
 
             for(iMon in 1:monEnd) {
