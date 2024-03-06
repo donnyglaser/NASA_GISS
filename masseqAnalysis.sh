@@ -2,12 +2,12 @@
 
 # run in nobackup model_out
 
-list=`ls -d TopoEns_*_a/`
+list=`ls -d TopoEns_*_a`
 
-for ilist in "${list[@]}"
+for ilist in $list
 do
-        cd "$ilist"
+        cd $ilist
         cp /discover/home/dmglaser/modelE/decks/scripts/eqAnalysis.* .
         sbatch eqAnalysis.sh
-        cd..
+        cd ..
 done
