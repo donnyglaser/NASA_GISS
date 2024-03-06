@@ -67,7 +67,7 @@ for(ifile in 1:length(datList)) {
         ylab(nameVar[ivar]) +
         theme(plot.title = element_text(hjust = 0.5, size = 21, face = "bold"), text = element_text(size = 18), axis.text.x = element_text(size = 16), aspect.ratio = 0.25, axis.line = element_line(color = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), panel.border = element_rect(color = "black", fill=NA, linewidth=2), legend.key=element_blank(), legend.key.height = unit(0.83, "inch"), plot.margin = margin(0.25, 0.25, 0.25, 0.25, "cm"), plot.tag.position = c(0.15, 0.02), axis.title.y.right = element_text(margin = margin(l = 83)), legend.position = c(1.07, 0.52), panel.spacing = unit(5, "mm"))
 
-        ggsave(paste0(run, "_EqPlot_", allVar[ivar], '_LoFacet_', format(Sys.time(), "%y%m%d"), ".png"), height = 6.25, width = 5, unit = 'in', dpi = 300)
+        ggsave(paste0(run, "_EqPlot_", allVar[ivar,2], '_LoFacet_', format(Sys.time(), "%y%m%d"), ".png"), height = 6.25, width = 5, unit = 'in', dpi = 300)
 
 
         ### MID LATITUDE MEANS ###
@@ -91,7 +91,7 @@ for(ifile in 1:length(datList)) {
         ylab(nameVar[ivar]) +
         theme(plot.title = element_text(hjust = 0.5, size = 21, face = "bold"), text = element_text(size = 18), axis.text.x = element_text(size = 16), aspect.ratio = 0.25, axis.line = element_line(color = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), panel.border = element_rect(color = "black", fill=NA, linewidth=2), legend.key=element_blank(), legend.key.height = unit(0.83, "inch"), plot.margin = margin(0.25, 0.25, 0.25, 0.25, "cm"), plot.tag.position = c(0.15, 0.02), axis.title.y.right = element_text(margin = margin(l = 83)), legend.position = c(1.07, 0.52), panel.spacing = unit(5, "mm"))
 
-        ggsave(paste0(run, "_EqPlot_", allVar[ivar], '_MidFacet_', format(Sys.time(), "%y%m%d"), ".png"), height = 6.25, width = 5, unit = 'in', dpi = 300)
+        ggsave(paste0(run, "_EqPlot_", allVar[ivar,2], '_MidFacet_', format(Sys.time(), "%y%m%d"), ".png"), height = 6.25, width = 5, unit = 'in', dpi = 300)
 
 
 
@@ -116,7 +116,7 @@ for(ifile in 1:length(datList)) {
         ylab(nameVar[ivar]) +
         theme(plot.title = element_text(hjust = 0.5, size = 21, face = "bold"), text = element_text(size = 18), axis.text.x = element_text(size = 16), aspect.ratio = 0.25, axis.line = element_line(color = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), panel.border = element_rect(color = "black", fill=NA, size=2), legend.key=element_blank(), legend.key.height = unit(0.83, "inch"), plot.margin = margin(0.25, 0.25, 0.25, 0.25, "cm"), plot.tag.position = c(0.15, 0.02), axis.title.y.right = element_text(margin = margin(l = 83)), legend.position = c(1.07, 0.52), panel.spacing = unit(5, "mm"))
 
-        ggsave(paste0(run, "_EqPlot_", allVar[ivar], '_HiFacet_', format(Sys.time(), "%y%m%d"), ".png"), height = 7, width = 5, unit = 'in', dpi = 300)
+        ggsave(paste0(run, "_EqPlot_", allVar[ivar,2], '_HiFacet_', format(Sys.time(), "%y%m%d"), ".png"), height = 7, width = 5, unit = 'in', dpi = 300)
 
     }
 }
