@@ -6,6 +6,8 @@
 
 #SBATCH --ntasks-per-node=44
 
+#SBATCH --constraint="sky|cas"
+
 #SBATCH --time=12:00:00
 
 #SBATCH --output=./slurmOut/%x-%j-slurm.out
