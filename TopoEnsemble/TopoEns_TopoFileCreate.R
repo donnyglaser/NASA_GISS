@@ -1,11 +1,12 @@
 ## this has been tested and created topo files that run correctly ##
 ## have yet to test the 0% surface area topo files (no ocean cells) ##
 
+library(ncdf4)
+
 setwd('/Users/dmglaser/Documents/Research/NASA/ROCKE3DModel/Projects/Mars/MarsTopography/Paleo Mars')
 #pctSurf <- readRDS('/Users/dmglaser/Documents/Research/NASA/ROCKE3DModel/Projects/Mars/MarsTopography/Paleo Mars/OceanSurfaceAreaTable_wGEL_231214.rds')
 pctSurf <- readRDS('OceanSurfaceAreaTable_wGEL_240125.rds')
 load("/Users/dmglaser/Documents/Research/NASA/ROCKE3DModel/Projects/Mars/MarsTopography/Paleo Mars/OIC_AverageFile_231018.Rda") # loads as OIC_all
-library(ncdf4)
 
 
 xvals <- seq(-177.5, 177.5, 5)
