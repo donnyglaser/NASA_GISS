@@ -1,15 +1,17 @@
 #!/bin/bash
 
+## run this in the run's directory ##
+## this script takes monthly output and sums to yearly, ##
+## then scales the yearly to an aij and aijk file, ##
+## then creates a sum file for the last 50 years of the simulation, ##
+## lastly, this moves all acc and aij+aijk files to a ANN or ACC folder ##
+## use this script to assess the timeseries equilibrium of a run ##
+
 ##SBATCH --ntasks-per-node=11
 
 ##SBATCH --time=12:00:00
 
 ##SBATCH --constraint=mil ## test this out to go to the less crowded servers??
-
-## run in the run's directory
-mkdir ACC
-mv *.acc*.nc ./ACC/
-cd ACC
 
 echo $(date)
 yearList=(DEC*)
@@ -28,8 +30,6 @@ let ed1=ed2-50
 st=${annList[@]:$ed1:$ed2}
 
 sumfiles $st
-#sumfiles ${annList[@]}
-#echo "sum files"
 
 name=${annList[$ed1]:3:4}
 name+='-'
@@ -37,8 +37,11 @@ name+=${annList[$ed2]:3:4}
 st=(*$name*)
 
 scaleacc $st aij
+scaleacc $st aijk
 
 echo $(date)
 
-mkdir ../ANN/
-mv ANN* ../ANN/
+mkdir ANN
+mv ANN*.aij*.nc ./ANN/
+mkdir ACC
+mv *.acc*.nc ./ACC/
