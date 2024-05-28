@@ -37,7 +37,7 @@ name+=${annList[$ed2]:3:4}
 st=(*$name*)
 
 scaleacc $st aij
-scaleacc $st aijk
+scaleacc $st aijl
 
 echo $(date)
 
