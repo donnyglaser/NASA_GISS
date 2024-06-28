@@ -1,5 +1,12 @@
 ## Goal: convert the model output to comparable units as the observations ##
-## objective: convert model levels to P units ##
+## objective 1: sum all dust ##
+## objective 2: calculate dust in kg/m^2 ##
+## objective 3: calculate layer h ##
+## objective 4: calculate tau in km^-1 ##
+## objective 5: calculate layer pressure (Jan or Kostas methods) ##
+## objective 6: interpolate dust to observational pressure values ##
+## objective 7: interpolate dust to observational latitudes ##
+## objective 8: calculate zonal means ##
 
 ## from Jan's email: ##
 # I see following steps to get there:
@@ -25,6 +32,42 @@
 # 5. Calculating the zonal averages of the derived dAOD/dz
 
 ###############################################################################
+
+## second Jan email: ##
+
+# >> the relevant paper for the MCS retrievals by Kleinboehl et al. is
+# >> attached. For the dust retrieval, channel A5 is used (463 cm^-1, which
+# >> is 21.6 um frequency). I don't think that we even need to do our own
+# >> separate Mie calculations. The paper already provides the extinction
+# >> efficiency for dust for that wavenumber from Mie calculations. It is
+# >> Q_ext=0.5473 (Table 2), which is based on the assumptions on the size
+# >> distribution, effective radius, and effective variance for the MCS
+# >> retrievals. And we want to be as close as possible to the assumptions of
+# >> the retrievals for our comparison.
+# >>
+# >> We just take this Q_ext and combine it with our simulated dust mass to
+# >> calculate the layer optical depth from the layer dust mass in our
+# >> simulations:
+# >>
+# >> tau_layer=3*Q_ext*m_dust / (4*r_eff*rho_dust)
+# >>
+# >> with m_dust dust is the mass in [kg*m^2] in the layer. m_dust can be
+# >> derived from Clay, Silt1, Silt2, Silt3, Silt4 in the taijl file by
+# >> multiplying those mixing ratios in the layers with the layer variable
+# >> "airmass".
+# >>
+# >> r_eff = 1.5e-6 m is the effective radius of dust, assumed the same as in
+# >> the retrievals.
+# >>
+# >> rho_dust is the particle density of dust, with rho_clay=2.5e3 kg m^-3
+# >> and rho_silt[1-4]=2.65e3 kg m^-3.
+# >>
+# >> Do this for all the size bins for the individual contributions and
+# >> summed up then for the total dust.
+# >>
+# >> tau_layer then just needs to be divided by the layer thickness again to
+# >> get the simulated opacity in km^-1 in the layer, and then brought onto
+# >> the pressure coordinate system for the comparison with the MCS data.
 
 ### libraries ###
 library(tidyverse)
@@ -66,15 +109,286 @@ for(iyr in 1:length(runYrs)) {
     for(imon in 1:length(mons)) {
         mList <- yrList[grep(mons[imon], yrList)]
 
+        ## objective 1: sum all dust ##
         taijl <- grep(paste0(runYrs[iyr], '.taijl'), mList)
+        taijl <- mList[taijl]
+        taijl <- nc_open(taijl)
+
+        dust <- ncvar_get(taijl, varid = 'Clay')
+        dust <- dust + ncvar_get(taijl, varid = 'Silt1')
+        dust <- dust + ncvar_get(taijl, varid = 'Silt2')
+        dust <- dust + ncvar_get(taijl, varid = 'Silt3')
+        dust <- dust + ncvar_get(taijl, varid = 'Silt4')
+        dust <- dust * 1e-8
+
+        nc_close(taijl)
+        ########################################################
+
+        ## objective 2: calculate dust in kg/m^2 ##
         aijl <- grep(paste0(runYrs[iyr], '.aijl'), mList)
+        aijl <- mList[aijl]
+        aijl <- nc_open(aijl)
+        airmass <- ncvar_get(aijl, varid = 'airmass')
+
+        dust <- dust * airmass
+        dust <- array(data = dust, dim = c(72,46,40), dimnames = list(lonList, latList, 1:40))
+        #nc_close(aijl)
+        ########################################################
+
+        ## objective 3: calculate layer h ##
+        z <- ncvar_get(aijl, varid = 'z')
+        z <- array(data = z, dim = c(72,46,40), dimnames = list(lonList, latList, 1:40))
+        zdelta <- array(c(NA, NA, NA), dim = c(72, 46, 40), dimnames = list(lonList, latList, 1:40))
+        for(ilayer in 1:39){
+            tz <- z[,,ilayer]
+            if(ilayer == 1) {
+                for(ilon in 1:72) {
+                    for(ilat in 1:46) {
+                        zdelta[ilon, ilat, ilayer] <- (tz[ilon, ilat] - topo[ilon, ilat]) * 2
+                    }
+                }
+            } else{
+                for(ilon in 1:72) {
+                    for(ilat in 1:46) {
+                        tzdelta <- (tz[ilon, ilat] - topo[ilon, ilat])
+                        tzdelta <- tzdelta - sum(zdelta[ilon, ilat, (1:(ilayer-1))])
+                        zdelta[ilon, ilat, ilayer] <- tzdelta * 2
+                    }
+                }
+            }
+        }
+
+        zM <- melt(z)
+        colnames(zM) <- c('lon', 'lat', 'layer', 'height')
+        #nc_close(z)
+        zdelta <- zdelta / 1000 # convert from m to km
+        ########################################################
+
+        ## objective 4: calculate tau in km^-1 ##
+        Qext = 0.3506 # dimensionless
+        rEff = 1.06e-6 # m
+        rhoDust = 2.5e3 # kg/m^3
+
+        tau <- 3 * Qext * dust
+        tau <- tau / (4 * rEff * rhoDust)
+        #####################
+        tau <- tau / zdelta    #work on this
+        #####################
+        tauM <- melt(tau)
+        colnames(tauM) <- c('lon', 'lat', 'layer', 'dustTau')
+        ########################################################
+
+        ## objective 5a: calculate layer pressure (Kostas method) ##
+        ## start at top, sum mass per square area ##
+        g <- 3.71 # m/s^2
+        pres <- array(c(NA, NA, NA), dim = c(72, 46, 40), dimnames = list(lonList, latList, 1:40))
+        for(ilayer in 40:1) {
+            tAM <- airmass[,,ilayer]
+            
+            if(ilayer < 40) {
+                tAM <- pres[,,(ilayer+1)] + tAM
+            }
+            pres[,,ilayer] <- tAM
+        }
+        pres <- pres * g # in Pa
+        pres <- pres / 100 # to mbar
+        presM <- melt(pres)
+        colnames(presM) <- c('lon', 'lat', 'layer', 'pressure')
+
+
+        dataOut <- join(zM, presM, by = c('lon', 'lat', 'layer'))
+        dataOut <- join(dataOut, tauM, by = c('lon', 'lat', 'layer'))
+        dataOut <- cbind('ModelData', runYrs[iyr], mons[imon], dataOut)
+        colnames(dataOut)[1:3] <- c('DataType', 'Year', 'Month')
+        
+        ########################################################
+        ## TEST PLOT ##
+        ## map ##
+        xmap <- subset(dataOut, layer == 1)
+        ggplot(xmap, aes(x = lon, y = lat, fill = dustTau)) +
+        geom_tile()
+        ## THIS WORKS ##
+        ###########################
+        ## TEST PLOT ##
+        ## profile: layer ##
+        xprof <- subset(dataOut, lon == 2.5)
+        ggplot(xprof, aes(x = lat, y = layer, fill = dustTau)) +
+        geom_tile()
+        ## THIS WORKS ##
+        ###########################
+        ## TEST PLOT ##
+        ## profile: pressure ##
+        ggplot(xprof, aes(x = lat, y = pressure, color = dustTau)) +
+        geom_point()
+        ## THIS WORKS ##
+        ###########################
+        ## TEST PLOT ##
+        ## profile: height ##
+        ggplot(xprof, aes(x = lat, y = height, color = dustTau)) +
+        geom_point()
+        ## THIS WORKS ##
+        ###########################
+        ## TEST PLOT ##
+        ## profile: layer ##
+        xprof <- subset(xprof, height <= 20000)
+        ggplot(xprof, aes(x = lat, y = layer, color = dustTau)) +
+        geom_point()
+        ## THIS WORKS ##
+        ###########################
+        ## TEST PLOT ##
+        ## single column: h vs p ##
+        xprof <- subset(dataOut, lon == 2.5)
+        xcol <- subset(xprof, lat == 2)
+        ggplot(xcol, aes(x = height, y = pressure)) +
+        geom_point()
+        ## THIS WORKS ##
+        ###########################
+
+
+        ## objective 6: interpolate dust to observational pressure values ##
+        pComp <- MCSPLevels / 100
+        pComp <- pComp[1:43]
+
+        interpOut1 <- data.frame()
+        for(ilat in 1:46) {
+            subLat <- subset(dataOut, lat == latList[ilat])
+
+            for(ilon in 1:72) {
+                sub <- subset(subLat, lon == lonList[ilon])
+
+                for(ipres in 1:length(pComp)) {
+
+                    if(pComp[ipres] > max(sub$pressure)) {
+                        tOut <- cbind(sub$Year[1], sub$Month[1], lonList[ilon], latList[ilat], pComp[ipres], NA)
+                        colnames(tOut) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
+                        interpOut1 <- rbind(interpOut1, tOut)
+                    } else if(pComp[ipres] < min(sub$pressure)) {
+                        tOut <- cbind(sub$ModelYear[1], sub$Month[1], latList[ilat], pComp[ipres], NA)
+                        colnames(tOut) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
+                        interpOut1 <- rbind(interpOut1, tOut)
+                    } else {
+                        ## find nearest model data ##
+                        tComp <- cbind(NA, pComp[ipres], NA)
+                        colnames(tComp) <- c('layer', 'pressure', 'dustTau')
+                        tReg <- sub[,c(6,8,9)]
+                        tReg <- rbind(tReg, tComp)
+                        tReg <- tReg[order(-tReg$pressure),]
+                        index <- match(pComp[ipres], tReg$pressure)
+                        tReg <- tReg[(index-2):(index+2),]
+                        reg <- lm(tReg$dustTau ~ log(tReg$pressure))
+                        reg <- summary(reg)
+                        reg <- reg$coefficients
+                        dInterp <- reg[1,1] + (reg[2,1] * log(pComp[ipres]))
+
+                        tOut <- cbind(sub$Year[1], sub$Month[1], lonList[ilon], latList[ilat], pComp[ipres], dInterp)
+                        colnames(tOut) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
+                        interpOut1 <- rbind(interpOut1, tOut)
+                    }
+                }
+            }
+        }
+        interpOut1[,3:6] <- lapply(interpOut1[,3:6],as.numeric)
+
+        ## TEST PLOT ##
+        ## map ##
+        xmap <- subset(interpOut1, pressure == pComp[15])
+        ggplot(xmap, aes(x = lon, y = lat, fill = dustTau)) +
+        geom_tile()
+        ## THIS WORKS ##
+        ###########################
+        ## TEST PLOT ##
+        ## profile: pressure ##
+        xprof <- subset(interpOut1, lon == 2.5)
+        ggplot(xprof, aes(x = lat, y = pressure, z = dustTau)) +
+        geom_contour_filled() +
+        scale_y_continuous(name = 'Pressure (mB)', trans = c("log10", "reverse"), expand = expansion(), limits = c(12, 0.1), labels = function(x) sprintf("%g", x))
+        #geom_point(size=2)
+        ## THIS WORKS ##
+
+        ########################################################
+
+        ## objective 7: interpolate dust to observational latitudes ##
+
+        interpOut <- data.frame()
+        for(ilon in 1:length(lonList)){ ## subset at specific long
+            lonSub <- subset(interpOut1, lon == lonList[ilon])
+
+            for(ipres in 1:length(pComp)) { ## subset at specific pressure
+                pSub <- subset(lonSub, round(pressure, digits = 3) == round(pComp[ipres], digits = 3))
+                naPTab <- is.na(pSub$dustTau)
+                naPTab <- naPTab[naPTab==FALSE]
+
+                if(length(naPTab) > 0) { ## this checks to see if there are any data at the P level
+
+                    for(ilat in 1:length(MCSlatLevels)) { ## iterate thru each MCS lat level for interpolation
+                        latComp <- MCSlatLevels[ilat]
+                        latSel <- c(latList, latComp)
+                        latSel <- latSel[order(latSel)]
+
+                        index <- match(latComp, latSel)
+                        latSub <- subset(pSub, lat == latSel[index-1] | lat == latSel[index+1])
+                        nalatTab <- is.na(latSub$dustTau)
+                        nalatTab <- nalatTab[nalatTab==FALSE]
+
+                        ## check to see if there are any model neighbors to MCS lats
+                        if(length(nalatTab) == 2) { ## there are two neighbors: interpolation between two points
+                            reg <- lm(latSub$dustTau ~ latSub$lat)
+                            reg <- summary(reg)
+                            reg <- reg$coefficients
+                            dInterp <- reg[1,1] + (reg[2,1] * latComp)
+
+                            tOut <- cbind(latSub[1,1:3], latComp, latSub[1,5], dInterp)
+                            colnames(tOut) <- colnames(latSub)
+                            interpOut <- rbind(interpOut, tOut)
+                        } else if(length(nalatTab) == 1) { ## there is one neighbor: check which one is closest
+                            latSubOrd <- latSub[order(latSub$dustTau),]
+                            delLat <- abs(latComp - latSubOrd$lat[1])
+                            delLatna <- abs(latComp - latSubOrd$lat[2])
+
+                            if(delLat < delLatna){ ## the 'data' latitude is closest to the MCS lat: insert data
+                                tOut <- cbind(latSub[1,1:3], latComp, latSub[1,5], latSubOrd$dustTau[1])
+                                colnames(tOut) <- colnames(latSub)
+                                interpOut <- rbind(interpOut, tOut)
+                            } else{ ## the 'na' latitude is closest to MCS lat: insert na
+                                tOut <- cbind(latSub[1,1:3], latComp, latSub[1,5], NA)
+                                colnames(tOut) <- colnames(latSub)
+                                interpOut <- rbind(interpOut, tOut)
+                            }
+                        } else { ## there are no neighbors: insert na
+                            tOut <- cbind(latSub[1,1:3], latComp, latSub[1,5], NA)
+                            colnames(tOut) <- colnames(latSub)
+                            interpOut <- rbind(interpOut, tOut)
+                        }
+                    }
+                } else{
+                    tOut <- cbind(latSub[1,1:3], latComp, latSub[1,5], NA)
+                    colnames(tOut) <- colnames(latSub)
+                    interpOut <- rbind(interpOut, tOut)
+                }
+            }
+        }
+            
+
+
+
+
+        ## objective 8: calculate zonal means ##
+
+
+
+
+
+
+
+        ########################################################
+        
         aij <- mList
         aij[c(taijl, aijl)] <- NA
         aij <- aij[!is.na(aij)]
-        taijl <- mList[taijl]
-        aijl <- mList[aijl]
-        taijl <- nc_open(taijl)
-        aijl <- nc_open(aijl)
+        
+        
+        
+        
         aij <- nc_open(aij)
 
         plm <- ncvar_get(taijl, varid = 'plm')
@@ -87,6 +401,11 @@ for(iyr in 1:length(runYrs)) {
         nc_close(taijl)
         nc_close(aijl)
         nc_close(aij)
+
+        
+
+
+
 
         ## Calculate pressure ##
         sig <- c()
@@ -190,42 +509,7 @@ for(iyr in 1:length(runYrs)) {
         
         ## do interpolation here ##
         ## first, interpolate between pressure levels ##
-        interpOut1 <- data.frame()
-        for(ilat in 1:46) {
-            subLat <- subset(zoneOut, Lat == latList[ilat])
-
-
-            for(ipres in 1:length(MCSPLevels)) {
-                pComp <- MCSPLevels[ipres] / 100
-                if(pComp > max(subLat$mean_Pressure)) {
-                    tOut <- cbind(subLat$ModelYear[1], subLat$Month[1], latList[ilat], pComp, NA)
-                    colnames(tOut) <- c('ModelYear', 'Month', 'Lat', 'Pressure', 'dTau_dz_interp')
-                    interpOut1 <- rbind(interpOut1, tOut)
-                } else if(pComp < min(subLat$mean_Pressure)) {
-                    tOut <- cbind(subLat$ModelYear[1], subLat$Month[1], latList[ilat], pComp, NA)
-                    colnames(tOut) <- c('ModelYear', 'Month', 'Lat', 'Pressure', 'dTau_dz_interp')
-                    interpOut1 <- rbind(interpOut1, tOut)
-                } else {
-                    ## find nearest model data ##
-                    tComp <- cbind(NA, pComp, NA)
-                    colnames(tComp) <- c('Layer', 'mean_Pressure', 'mean_dTau_dz')
-                    tReg <- subLat[,c(4,7,13)]
-                    tReg <- rbind(tReg, tComp)
-                    tReg <- tReg[order(-tReg$mean_Pressure),]
-                    index <- match(pComp, tReg$mean_Pressure)
-                    tReg <- tReg[(index-2):(index+2),]
-                    reg <- lm(tReg$mean_dTau_dz ~ log(tReg$mean_Pressure))
-                    reg <- summary(reg)
-                    reg <- reg$coefficients
-                    dInterp <- reg[1,1] + (reg[2,1] * log(pComp))
-
-                    tOut <- cbind(subLat$ModelYear[1], subLat$Month[1], latList[ilat], pComp, dInterp)
-                    colnames(tOut) <- c('ModelYear', 'Month', 'Lat', 'Pressure', 'dTau_dz_interp')
-                    interpOut1 <- rbind(interpOut1, tOut)
-                }
-            }
-        }
-        interpOut1[,3:5] <- lapply(interpOut1[,3:5],as.numeric)
+        
 
         interpOut1$dTau_dz_interp[interpOut1$dTau_dz_interp < 0 & is.na(interpOut1$dTau_dz_interp) == FALSE] <- 0
 
@@ -354,8 +638,6 @@ for(iyr in 1:length(runYrs)) {
 
 MCSList <- list.files(getwd(), pattern = 'MCS Zonal Mean Dust')
 MCSYear <- str_sub(MCSList, 26, 29)
-
-
 
 for(iyear in 1:length(MCSList)) {
     nc <- nc_open(MCSList[iyear])
