@@ -368,6 +368,28 @@ for(iyr in 1:length(runYrs)) {
             }
         }
             
+        ## TEST PLOTS ##
+        ## map ##
+        xmap <- subset(interpOut, pressure == pComp[15])
+        ggplot(xmap, aes(x = lon, y = lat, fill = dustTau)) +
+        geom_tile()
+        ## THIS WORKS ##
+        ###########################
+        ## TEST PLOT ##
+        ## profile: pressure ##
+        xprof <- subset(interpOut1, lon == 2.5)
+        ggplot(xprof, aes(x = lat, y = pressure, z = dustTau)) +
+        geom_contour_filled() +
+        scale_y_continuous(name = 'Pressure (mB)', trans = c("log10", "reverse"), expand = expansion(), limits = c(12, 0.1), labels = function(x) sprintf("%g", x))
+        #geom_point(size=2)
+        ## THIS WORKS ##
+
+
+
+
+        ######################################
+        ## Code works up to this point ## 240628
+        ######################################
 
 
 
