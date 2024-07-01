@@ -1,3 +1,7 @@
+## script to summarize the final equilibrium state (end of run sumfiles) of all the runs ##
+## run in the SumData folder ##
+## outputs a dataframe with all the global means for each run, and plots(??) ##
+
 library(tidyverse)
 library(ncdf4)
 library(mapproj) # global map projection library
@@ -6,11 +10,20 @@ library(plyr)
 library(viridis)
 library(shadowtext)
 
-aij <- list.files(getwd(), pattern = 'aij')
+setwd('/Users/dmglaser/Documents/Research/NASA/ROCKE3DModel/Projects/Topo Ensemble/Data/SumData')
+
+#eqRuns <- c('_0x1_', '_0x5_', '_0x10_', '_90x5_', '_90x10_', '_90x20_', '_90x30_') ## update this to identify the runs that are in equilibrium
+
+aij <- list.files(getwd(), pattern = '.aij')
+aijk <- subset(aij, grepl('aijk', aij) == TRUE)
+aijl <- subset(aij, grepl('aijl', aij) == TRUE)
+aij <- subset(aij, grepl('aijk', aij) == FALSE)
+aij <- subset(aij, grepl('aijl', aij) == FALSE)
+
 subDir <- paste0('Plots_', format(Sys.time(), "%y%m%d"))
 dir.create(subDir)
 
-diags <- c('tsurf_hemis', 'qatm_hemis', 'pcldt_hemis', 'prsurf_hemis', 'gwtr_hemis', 'gice_hemis', 'prec_hemis', 'pot_evap_hemis', 'ZSI_hemis', 'snowdp_hemis')
+diags <- c('tsurf_hemis', 'qatm_hemis', 'net_rad_planet_hemis', 'pcldt_hemis', 'gwtr_hemis', 'gice_hemis', 'prec_hemis', 'pot_evap_hemis', 'ZSI_hemis', 'snowdp_hemis', 'plan_alb_hemis')
 latList <- seq(-90,90,4)
 lonList <- seq(-177.5,177.5,5)
 
@@ -93,7 +106,7 @@ for(ifile in 1:length(aij)) {
                 axis.title.y.right = element_text(margin = margin(l = 83)),
                 #legend.position = c(1.07, 0.52)
             )
-            ggsave(paste0(subDir, '/TopoEns_', title, "_tsurf_", format(Sys.time(), "%y%m%d"), ".png"), height = 7, width = 16, unit = 'in', dpi = 300)
+            ggsave(paste0(subDir, '/TopoEns_', title, "_map_tsurf_", format(Sys.time(), "%y%m%d"), ".png"), height = 7, width = 16, unit = 'in', dpi = 300)
 
         } else {
         }
@@ -105,15 +118,53 @@ dataOut[,3] <- as.numeric(dataOut[,3])
 dataOut[,4] <- as.numeric(dataOut[,4])
 dataOut[,5] <- as.numeric(dataOut[,5])
 dataOut[,7] <- as.numeric(dataOut[,7])
-saveRDS(dataOut, file = paste0('AllData_Sum_TopoEns_', format(Sys.time(), "%y%m%d"), ".png"))
+saveRDS(dataOut, file = paste0('AllData_Sum_TopoEns_', format(Sys.time(), "%y%m%d"), ".rds"))
 
-linePlot <- subset(dataOut, RotationAngle == 0 | RotationAngle == 90 | WaterContent == 100)
-tsurf <- subset(linePlot, Diagnostic == 'tsurf_hemis')
-tsurf$RotationAngle <- factor(tsurf$RotationAngle)
+### SUMMARY PLOTS ###
 
-ggplot(subset(tsurf, WaterContent < 100), aes(x = WaterContent, y = Value, Group = RotationAngle, color = RotationAngle)) +
-geom_point() +
-geom_line() +
-geom_hline(data = subset(tsurf, WaterContent == 100), aes(yintercept = Value))
+## line plots ##
+for(idiag in 1:length(diags)) {
+    tempPlot <- subset(dataOut, Diagnostic == diags[idiag])
+    tempPlot$RotationAngle <- factor(tempPlot$RotationAngle)
+
+    p <- ggplot(subset(tempPlot, WaterContent < 100 & WaterContent > 0), aes(x = WaterContent, y = Value, group = RotationAngle, color = RotationAngle))
+    p <- p + geom_point(size = 4)
+    p <- p + geom_line(size = 2)
+    if(idiag == 1){
+        p <- p + geom_hline(aes(yintercept = 0), linetype = 'dashed', color = 'grey30')
+    } else {
+    }
+    p <- p + scale_color_manual(values = c('black', 'grey65'))
+    p <- p + xlab("Water Surface Area (%)")
+    p <- p + ylab(diags[idiag])
+    p <- p + guides(color = guide_legend('Rotation\nAngle'))
+    p <- p + geom_point(data = subset(tempPlot, WaterContent == 0), aes(x = WaterContent, y = Value, color = RotationAngle), size = 3)
+    p <- p + geom_point(data = subset(tempPlot, WaterContent == 100), aes(x = WaterContent, y = Value), color = 'black', size = 3, shape = 0, stroke = 2)
+    p <- p + theme(
+        plot.title = element_text(hjust = 0.5, size = 21, face = "bold"), 
+        text = element_text(size = 18), 
+        axis.text.x = element_text(size = 16),
+        aspect.ratio = 0.625, 
+        axis.line = element_line(color = "black"), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(), 
+        panel.border = element_rect(color = "black", fill=NA, linewidth=2), 
+        legend.key=element_blank(), 
+        legend.key.height = unit(1.3, 'cm'), 
+        plot.margin = margin(0.25, 0.25, 0.25, 0.25, "cm"), 
+        plot.tag.position = c(0.15, 0.02), 
+        axis.title.y.right = element_text(margin = margin(l = 83)),
+        strip.background =element_rect(fill="white"),
+        #legend.position = c(1.07, 0.52), 
+        panel.spacing = unit(5, "mm")
+    )
+
+    ggsave(paste0(subDir, '/TopoEns_line_', diags[idiag], '_', format(Sys.time(), "%y%m%d"), ".png"), plot = p, height = 7, width = 16, unit = 'in', dpi = 300)
+}
+
+## SCATTER PLOTS ##
+scatterPlot <- dataOut[,c(2:3,6:7)]
+scatterPlot <- cast(scatterPlot, RotationAngle * WaterContent ~ Diagnostic)
 
 ## compare tsurf and cloud cover ##
