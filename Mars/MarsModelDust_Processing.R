@@ -445,6 +445,7 @@ for(iyr in 1:1) { #length(runYrs)
         print(paste0('total time: ', Sys.time() - runTime1))
         ## TESTING ##
 
+        colnames(interpOut) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
         saveRDS(interpOut, file = paste0(subDir, '/ModelData_Interp_', mons[imon], runYrs[iyr], '_', format(Sys.time(), "%y%m%d"), ".rds"))
 
         # ## TEST PLOTS ##
@@ -527,8 +528,12 @@ for(iyr in 1:1) { #length(runYrs)
         runTime <- Sys.time() - runTime
         print(runTime)
         ###### TESTING ######
+
+        saveRDS(zonalOut, file = paste0(subDir, '/ModelData_Zonal_', mons[imon], runYrs[iyr], '_', format(Sys.time(), "%y%m%d"), ".rds"))
     }
 }
+
+
 
 ## now we have a table for each month of each year for all relevant dust data ##
 
