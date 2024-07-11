@@ -260,15 +260,17 @@ for(iyr in 1:1) { #length(runYrs)
         ## THIS NEEDS A LOT OF FIXING TO MAKE MORE EFFICIENT ##
         pComp <- MCSPLevels / 100
         pComp <- pComp[1:43]
+        nilat <- length(latList)
+        nilon <- length(lonList)
+        nipres <- length(pComp)
 
-        interpOut1 <- data.frame(matrix(NA, nrow = (46*72*length(pComp)), ncol = 6))
+        interpOut1 <- data.frame(matrix(NA, nrow = (nilat*nilon*nipres), ncol = 6))
         ## TESTING ##
         runTime <- Sys.time()
         ## TESTING ##
         for(ilat in 1:46) {
             latTime <- Sys.time()
             subLat <- subset(dataOut, lat == latList[ilat])
-
             
             for(ilon in 1:72) {
                 lonTime <- Sys.time()
@@ -277,11 +279,11 @@ for(iyr in 1:1) { #length(runYrs)
                 for(ipres in 1:length(pComp)) {
 
                     if(pComp[ipres] > max(sub$pressure)) { # higher pressure (lower elevation) than data
-                        interpOut1[(((ilat-1)*3096)+((ilon-1)*72)+(ipres)), ] <- c(sub$Year[1], sub$Month[1], lonList[ilon], latList[ilat], pComp[ipres], NA) ## use this method to write to a large table
+                        interpOut1[(((ilat-1)*(nilon*nipres))+((ilon-1)*nipres)+(ipres)), ] <- c(sub$Year[1], sub$Month[1], lonList[ilon], latList[ilat], pComp[ipres], NA) ## use this method to write to a large table
                         # colnames(tOut) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
                         # interpOut1 <- rbind(interpOut1, tOut)
                     } else if(pComp[ipres] < min(sub$pressure)) { # lower pressure (higher elevation) than data
-                        interpOut1[(((ilat-1)*3096)+((ilon-1)*72)+(ipres)), ] <- c(sub$ModelYear[1], sub$Month[1], latList[ilat], pComp[ipres], NA) ## use this method to write to a large table
+                        interpOut1[(((ilat-1)*(nilon*nipres))+((ilon-1)*nipres)+(ipres)), ] <- c(sub$ModelYear[1], sub$Month[1], latList[ilat], pComp[ipres], NA) ## use this method to write to a large table
                         # colnames(tOut) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
                         # interpOut1 <- rbind(interpOut1, tOut)
                     } else { # data is within pressure levels
@@ -298,7 +300,7 @@ for(iyr in 1:1) { #length(runYrs)
                         reg <- reg$coefficients
                         dInterp <- reg[1,1] + (reg[2,1] * log(pComp[ipres]))
 
-                        interpOut1[(((ilat-1)*3096)+((ilon-1)*72)+(ipres)), ] <- c(sub$Year[1], sub$Month[1], lonList[ilon], latList[ilat], pComp[ipres], dInterp)
+                        interpOut1[(((ilat-1)*(nilon*nipres))+((ilon-1)*nipres)+(ipres)), ] <- c(sub$Year[1], sub$Month[1], lonList[ilon], latList[ilat], pComp[ipres], dInterp)
                         # colnames(tOut) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
                         # interpOut1 <- rbind(interpOut1, tOut)
                     }
@@ -344,7 +346,9 @@ for(iyr in 1:1) { #length(runYrs)
         ## objective 7: interpolate dust to observational latitudes ##
 
         ## i think this might be prohibitively inefficient (240701) ##
-        idx1 <- length(pComp) * length(MCSlatLevels)
+        nilon <- length(lonList)
+        nipres <- length(pComp)
+        nilat <- length(MCSlatLevels)
 
         ## TESTING ##
         runTime1 <- Sys.time()
@@ -384,7 +388,7 @@ for(iyr in 1:1) { #length(runYrs)
 
 
                             ## work on this ##
-                            interpOut[(((ilon-1)*idx1)+((ipres-1)*72)+(ilat)), ] <- cbind(latSub[1,1:3], latComp, latSub[1,5], dInterp)
+                            interpOut[(((ilon-1)*(nipres*nilat))+((ipres-1)*nilat)+(ilat)), ] <- cbind(latSub[1,1:3], latComp, latSub[1,5], dInterp)
                             ## work on this ##
 
 
@@ -394,15 +398,16 @@ for(iyr in 1:1) { #length(runYrs)
                             delLatna <- abs(latComp - latSubOrd$lat[2])
 
 
-                            if(nrow(latSubOrd) == 1){
+                            # if(is.na(delLatna)){
 
-                                interpOut[(((ilon-1)*idx1)+((ipres-1)*72)+(ilat)), ] <- cbind(latSub[1,1:3], latComp, latSub[1,5], latSubOrd$dustTau[1])
+                            #     interpOut[(((ilon-1)*idx1)+((ipres-1)*72)+(ilat)), ] <- cbind(latSub[1,1:3], latComp, latSub[1,5], latSubOrd$dustTau[1])
 
-                            } else if(delLat < delLatna){ ## the 'data' latitude is closest to the MCS lat: insert data
+                            # } 
+                            if(delLat < delLatna){ ## the 'data' latitude is closest to the MCS lat: insert data
                                 
                                 
                                 ## work on this ##
-                                interpOut[(((ilon-1)*idx1)+((ipres-1)*72)+(ilat)), ] <- cbind(latSub[1,1:3], latComp, latSub[1,5], latSubOrd$dustTau[1])
+                                interpOut[(((ilon-1)*(nipres*nilat))+((ipres-1)*nilat)+(ilat)), ] <- cbind(latSub[1,1:3], latComp, latSub[1,5], latSubOrd$dustTau[1])
                                 ## work on this ##
 
 
@@ -410,7 +415,7 @@ for(iyr in 1:1) { #length(runYrs)
                                 
                                 
                                 ## work on this ##
-                                interpOut[(((ilon-1)*idx1)+((ipres-1)*72)+(ilat)), ] <- cbind(latSub[1,1:3], latComp, latSub[1,5], NA)
+                                interpOut[(((ilon-1)*(nipres*nilat))+((ipres-1)*nilat)+(ilat)), ] <- cbind(latSub[1,1:3], latComp, latSub[1,5], NA)
                                 ## work on this ##
 
 
@@ -419,7 +424,7 @@ for(iyr in 1:1) { #length(runYrs)
 
 
                             ## work on this ##
-                            interpOut[(((ilon-1)*idx1)+((ipres-1)*72)+(ilat)), ] <- cbind(latSub[1,1:3], latComp, latSub[1,5], NA)
+                            interpOut[(((ilon-1)*(nipres*nilat))+((ipres-1)*nilat)+(ilat)), ] <- cbind(latSub[1,1:3], latComp, latSub[1,5], NA)
                             ## work on this ##
 
 
@@ -429,7 +434,7 @@ for(iyr in 1:1) { #length(runYrs)
 
 
                     ## work on this ##
-                    interpOut[(((ilon-1)*idx1)+((ipres-1)*72)+(ilat)), ] <- cbind(pSub[1,1:3], MCSlatLevels, pSub[1,5], NA)
+                    interpOut[(((ilon-1)*(nipres*nilat))+((ipres-1)*nilat)+(ilat)), ] <- cbind(pSub[1,1:3], MCSlatLevels, pSub[1,5], NA)
                     ## work on this ##
 
 
@@ -437,7 +442,7 @@ for(iyr in 1:1) { #length(runYrs)
             }
 
             ## TESTING ##
-            print(paste0('loop time: ', Sys.time() - runTime))
+            print(paste0('ilon = ', ilon, ', time: ', Sys.time() - runTime))
             ## TESTING ##
         }
 
@@ -529,7 +534,7 @@ for(iyr in 1:1) { #length(runYrs)
         print(runTime)
         ###### TESTING ######
 
-        saveRDS(zonalOut, file = paste0(subDir, '/ModelData_Zonal_', mons[imon], runYrs[iyr], '_', format(Sys.time(), "%y%m%d"), ".rds"))
+        #saveRDS(zonalOut, file = paste0(subDir, '/ModelData_Zonal_', mons[imon], runYrs[iyr], '_', format(Sys.time(), "%y%m%d"), ".rds"))
     }
 }
 
