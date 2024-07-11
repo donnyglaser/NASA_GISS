@@ -76,10 +76,12 @@ library(plyr)
 library(dplyr)
 library(scales)
 library(viridis)
+library(reshape)
 
 
 ## for local testing ##
 setwd('/Users/dmglaser/Documents/Research/NASA/ROCKE3DModel/Projects/Mars/PerlwitzDust/Analysis/MCSWorkingDir')
+
 
 subDir <- paste0('Analysis_', format(Sys.time(), "%y%m%d"))
 dir.create(subDir)
@@ -103,10 +105,20 @@ MCSPLevels <- ncvar_get(exMCS, varid = 'P') ## extract P levels from example MCS
 MCSlatLevels <- ncvar_get(exMCS, varid = 'Latitude')
 nc_close(exMCS)
 
-for(iyr in 1:length(runYrs)) {
+dustPAL <- c('#800f27', '#be1b26', '#e2201d', '#fc4d2b', '#fd8d3d', '#feb24c', '#fed976', '#ffeda0', '#fffecc', '#ffffff')
+dustPAL <- dustPAL[10:1]
+
+runTime0 <- Sys.time()
+
+for(iyr in 1:1) { #length(runYrs)
     yrList <- list.files(getwd(), pattern = runYrs[iyr])
 
-    for(imon in 1:length(mons)) {
+    for(imon in 1:1) { #length(mons)
+        ###### TESTING ######
+        runTime <- Sys.time()
+        print(runTime)
+        ###### TESTING ######
+
         mList <- yrList[grep(mons[imon], yrList)]
 
         ## objective 1: sum all dust ##
@@ -132,7 +144,6 @@ for(iyr in 1:length(runYrs)) {
 
         dust <- dust * airmass
         dust <- array(data = dust, dim = c(72,46,40), dimnames = list(lonList, latList, 1:40))
-        #nc_close(aijl)
         ########################################################
 
         ## objective 3: calculate layer h ##
@@ -160,7 +171,7 @@ for(iyr in 1:length(runYrs)) {
 
         zM <- melt(z)
         colnames(zM) <- c('lon', 'lat', 'layer', 'height')
-        #nc_close(z)
+        nc_close(aijl)
         zdelta <- zdelta / 1000 # convert from m to km
         ########################################################
 
@@ -201,72 +212,79 @@ for(iyr in 1:length(runYrs)) {
         dataOut <- cbind('ModelData', runYrs[iyr], mons[imon], dataOut)
         colnames(dataOut)[1:3] <- c('DataType', 'Year', 'Month')
         
-        ########################################################
-        ## TEST PLOT ##
-        ## map ##
-        xmap <- subset(dataOut, layer == 1)
-        ggplot(xmap, aes(x = lon, y = lat, fill = dustTau)) +
-        geom_tile()
-        ## THIS WORKS ##
-        ###########################
-        ## TEST PLOT ##
-        ## profile: layer ##
-        xprof <- subset(dataOut, lon == 2.5)
-        ggplot(xprof, aes(x = lat, y = layer, fill = dustTau)) +
-        geom_tile()
-        ## THIS WORKS ##
-        ###########################
-        ## TEST PLOT ##
-        ## profile: pressure ##
-        ggplot(xprof, aes(x = lat, y = pressure, color = dustTau)) +
-        geom_point()
-        ## THIS WORKS ##
-        ###########################
-        ## TEST PLOT ##
-        ## profile: height ##
-        ggplot(xprof, aes(x = lat, y = height, color = dustTau)) +
-        geom_point()
-        ## THIS WORKS ##
-        ###########################
-        ## TEST PLOT ##
-        ## profile: layer ##
-        xprof <- subset(xprof, height <= 20000)
-        ggplot(xprof, aes(x = lat, y = layer, color = dustTau)) +
-        geom_point()
-        ## THIS WORKS ##
-        ###########################
-        ## TEST PLOT ##
-        ## single column: h vs p ##
-        xprof <- subset(dataOut, lon == 2.5)
-        xcol <- subset(xprof, lat == 2)
-        ggplot(xcol, aes(x = height, y = pressure)) +
-        geom_point()
-        ## THIS WORKS ##
-        ###########################
+        # ########################################################
+        # ## TEST PLOT ##
+        # ## map ##
+        # xmap <- subset(dataOut, layer == 1)
+        # ggplot(xmap, aes(x = lon, y = lat, fill = dustTau)) +
+        # geom_tile()
+        # ## THIS WORKS ##
+        # ###########################
+        # ## TEST PLOT ##
+        # ## profile: layer ##
+        # xprof <- subset(dataOut, lon == 2.5)
+        # ggplot(xprof, aes(x = lat, y = layer, fill = dustTau)) +
+        # geom_tile()
+        # ## THIS WORKS ##
+        # ###########################
+        # ## TEST PLOT ##
+        # ## profile: pressure ##
+        # ggplot(xprof, aes(x = lat, y = pressure, color = dustTau)) +
+        # geom_point()
+        # ## THIS WORKS ##
+        # ###########################
+        # ## TEST PLOT ##
+        # ## profile: height ##
+        # ggplot(xprof, aes(x = lat, y = height, color = dustTau)) +
+        # geom_point()
+        # ## THIS WORKS ##
+        # ###########################
+        # ## TEST PLOT ##
+        # ## profile: layer ##
+        # xprof <- subset(xprof, height <= 20000)
+        # ggplot(xprof, aes(x = lat, y = layer, color = dustTau)) +
+        # geom_point()
+        # ## THIS WORKS ##
+        # ###########################
+        # ## TEST PLOT ##
+        # ## single column: h vs p ##
+        # xprof <- subset(dataOut, lon == 2.5)
+        # xcol <- subset(xprof, lat == 2)
+        # ggplot(xcol, aes(x = height, y = pressure)) +
+        # geom_point()
+        # ## THIS WORKS ##
+        # ###########################
 
 
         ## objective 6: interpolate dust to observational pressure values ##
+        ## THIS NEEDS A LOT OF FIXING TO MAKE MORE EFFICIENT ##
         pComp <- MCSPLevels / 100
         pComp <- pComp[1:43]
 
-        interpOut1 <- data.frame()
+        interpOut1 <- data.frame(matrix(NA, nrow = (46*72*length(pComp)), ncol = 6))
+        ## TESTING ##
+        runTime <- Sys.time()
+        ## TESTING ##
         for(ilat in 1:46) {
+            latTime <- Sys.time()
             subLat <- subset(dataOut, lat == latList[ilat])
 
+            
             for(ilon in 1:72) {
+                lonTime <- Sys.time()
                 sub <- subset(subLat, lon == lonList[ilon])
 
                 for(ipres in 1:length(pComp)) {
 
-                    if(pComp[ipres] > max(sub$pressure)) {
-                        tOut <- cbind(sub$Year[1], sub$Month[1], lonList[ilon], latList[ilat], pComp[ipres], NA)
-                        colnames(tOut) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
-                        interpOut1 <- rbind(interpOut1, tOut)
-                    } else if(pComp[ipres] < min(sub$pressure)) {
-                        tOut <- cbind(sub$ModelYear[1], sub$Month[1], latList[ilat], pComp[ipres], NA)
-                        colnames(tOut) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
-                        interpOut1 <- rbind(interpOut1, tOut)
-                    } else {
+                    if(pComp[ipres] > max(sub$pressure)) { # higher pressure (lower elevation) than data
+                        interpOut1[(((ilat-1)*3096)+((ilon-1)*72)+(ipres)), ] <- c(sub$Year[1], sub$Month[1], lonList[ilon], latList[ilat], pComp[ipres], NA) ## use this method to write to a large table
+                        # colnames(tOut) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
+                        # interpOut1 <- rbind(interpOut1, tOut)
+                    } else if(pComp[ipres] < min(sub$pressure)) { # lower pressure (higher elevation) than data
+                        interpOut1[(((ilat-1)*3096)+((ilon-1)*72)+(ipres)), ] <- c(sub$ModelYear[1], sub$Month[1], latList[ilat], pComp[ipres], NA) ## use this method to write to a large table
+                        # colnames(tOut) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
+                        # interpOut1 <- rbind(interpOut1, tOut)
+                    } else { # data is within pressure levels
                         ## find nearest model data ##
                         tComp <- cbind(NA, pComp[ipres], NA)
                         colnames(tComp) <- c('layer', 'pressure', 'dustTau')
@@ -280,38 +298,65 @@ for(iyr in 1:length(runYrs)) {
                         reg <- reg$coefficients
                         dInterp <- reg[1,1] + (reg[2,1] * log(pComp[ipres]))
 
-                        tOut <- cbind(sub$Year[1], sub$Month[1], lonList[ilon], latList[ilat], pComp[ipres], dInterp)
-                        colnames(tOut) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
-                        interpOut1 <- rbind(interpOut1, tOut)
+                        interpOut1[(((ilat-1)*3096)+((ilon-1)*72)+(ipres)), ] <- c(sub$Year[1], sub$Month[1], lonList[ilon], latList[ilat], pComp[ipres], dInterp)
+                        # colnames(tOut) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
+                        # interpOut1 <- rbind(interpOut1, tOut)
                     }
                 }
-            }
-        }
-        interpOut1[,3:6] <- lapply(interpOut1[,3:6],as.numeric)
 
-        ## TEST PLOT ##
-        ## map ##
-        xmap <- subset(interpOut1, pressure == pComp[15])
-        ggplot(xmap, aes(x = lon, y = lat, fill = dustTau)) +
-        geom_tile()
-        ## THIS WORKS ##
-        ###########################
-        ## TEST PLOT ##
-        ## profile: pressure ##
-        xprof <- subset(interpOut1, lon == 2.5)
-        ggplot(xprof, aes(x = lat, y = pressure, z = dustTau)) +
-        geom_contour_filled() +
-        scale_y_continuous(name = 'Pressure (mB)', trans = c("log10", "reverse"), expand = expansion(), limits = c(12, 0.1), labels = function(x) sprintf("%g", x))
-        #geom_point(size=2)
-        ## THIS WORKS ##
+                # ###### TESTING ######
+                # print(paste0('ilon = ', ilon, ': ', Sys.time() - lonTime))
+                # ###### TESTING ######
+
+            }
+
+            ###### TESTING ######
+            print(paste0('ilat = ', ilat, ': ', Sys.time() - latTime))
+            ###### TESTING ######
+
+        }
+        ###### TESTING ######
+        print(paste0('Total Runtime: ', Sys.time() - runTime))
+        ###### TESTING ######
+        interpOut1[,3:6] <- lapply(interpOut1[,3:6],as.numeric)
+        colnames(interpOut1) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
+
+        
+
+        # ## TEST PLOT ##
+        # ## map ##
+        # xmap <- subset(interpOut1, pressure == pComp[15])
+        # ggplot(xmap, aes(x = lon, y = lat, fill = dustTau)) +
+        # geom_tile()
+        # ## THIS WORKS ##
+        # ###########################
+        # ## TEST PLOT ##
+        # ## profile: pressure ##
+        # xprof <- subset(interpOut1, lon == 2.5)
+        # ggplot(xprof, aes(x = lat, y = pressure, z = dustTau)) +
+        # geom_contour_filled() +
+        # scale_y_continuous(name = 'Pressure (mB)', trans = c("log10", "reverse"), expand = expansion(), limits = c(12, 0.1), labels = function(x) sprintf("%g", x))
+        # #geom_point(size=2)
+        # ## THIS WORKS ##
 
         ########################################################
 
         ## objective 7: interpolate dust to observational latitudes ##
 
-        interpOut <- data.frame()
+        ## i think this might be prohibitively inefficient (240701) ##
+        idx1 <- length(pComp) * length(MCSlatLevels)
+
+        ## TESTING ##
+        runTime1 <- Sys.time()
+        ## TESTING ##
+
+        interpOut <- data.frame(matrix(NA, nrow = (length(lonList)*length(pComp)*length(MCSlatLevels)), ncol = 6))
         for(ilon in 1:length(lonList)){ ## subset at specific long
             lonSub <- subset(interpOut1, lon == lonList[ilon])
+
+            ## TESTING ##
+            runTime <- Sys.time()
+            ## TESTING ##
 
             for(ipres in 1:length(pComp)) { ## subset at specific pressure
                 pSub <- subset(lonSub, round(pressure, digits = 3) == round(pComp[ipres], digits = 3))
@@ -337,72 +382,167 @@ for(iyr in 1:length(runYrs)) {
                             reg <- reg$coefficients
                             dInterp <- reg[1,1] + (reg[2,1] * latComp)
 
-                            tOut <- cbind(latSub[1,1:3], latComp, latSub[1,5], dInterp)
-                            colnames(tOut) <- colnames(latSub)
-                            interpOut <- rbind(interpOut, tOut)
+
+                            ## work on this ##
+                            interpOut[(((ilon-1)*idx1)+((ipres-1)*72)+(ilat)), ] <- cbind(latSub[1,1:3], latComp, latSub[1,5], dInterp)
+                            ## work on this ##
+
+
                         } else if(length(nalatTab) == 1) { ## there is one neighbor: check which one is closest
                             latSubOrd <- latSub[order(latSub$dustTau),]
                             delLat <- abs(latComp - latSubOrd$lat[1])
                             delLatna <- abs(latComp - latSubOrd$lat[2])
 
-                            if(delLat < delLatna){ ## the 'data' latitude is closest to the MCS lat: insert data
-                                tOut <- cbind(latSub[1,1:3], latComp, latSub[1,5], latSubOrd$dustTau[1])
-                                colnames(tOut) <- colnames(latSub)
-                                interpOut <- rbind(interpOut, tOut)
+
+                            if(nrow(latSubOrd) == 1){
+
+                                interpOut[(((ilon-1)*idx1)+((ipres-1)*72)+(ilat)), ] <- cbind(latSub[1,1:3], latComp, latSub[1,5], latSubOrd$dustTau[1])
+
+                            } else if(delLat < delLatna){ ## the 'data' latitude is closest to the MCS lat: insert data
+                                
+                                
+                                ## work on this ##
+                                interpOut[(((ilon-1)*idx1)+((ipres-1)*72)+(ilat)), ] <- cbind(latSub[1,1:3], latComp, latSub[1,5], latSubOrd$dustTau[1])
+                                ## work on this ##
+
+
                             } else{ ## the 'na' latitude is closest to MCS lat: insert na
-                                tOut <- cbind(latSub[1,1:3], latComp, latSub[1,5], NA)
-                                colnames(tOut) <- colnames(latSub)
-                                interpOut <- rbind(interpOut, tOut)
+                                
+                                
+                                ## work on this ##
+                                interpOut[(((ilon-1)*idx1)+((ipres-1)*72)+(ilat)), ] <- cbind(latSub[1,1:3], latComp, latSub[1,5], NA)
+                                ## work on this ##
+
+
                             }
                         } else { ## there are no neighbors: insert na
-                            tOut <- cbind(latSub[1,1:3], latComp, latSub[1,5], NA)
-                            colnames(tOut) <- colnames(latSub)
-                            interpOut <- rbind(interpOut, tOut)
+
+
+                            ## work on this ##
+                            interpOut[(((ilon-1)*idx1)+((ipres-1)*72)+(ilat)), ] <- cbind(latSub[1,1:3], latComp, latSub[1,5], NA)
+                            ## work on this ##
+
+
                         }
                     }
-                } else{
-                    tOut <- cbind(latSub[1,1:3], latComp, latSub[1,5], NA)
-                    colnames(tOut) <- colnames(latSub)
-                    interpOut <- rbind(interpOut, tOut)
+                } else{ # there are no data at all lats
+
+
+                    ## work on this ##
+                    interpOut[(((ilon-1)*idx1)+((ipres-1)*72)+(ilat)), ] <- cbind(pSub[1,1:3], MCSlatLevels, pSub[1,5], NA)
+                    ## work on this ##
+
+
                 }
             }
+
+            ## TESTING ##
+            print(paste0('loop time: ', Sys.time() - runTime))
+            ## TESTING ##
         }
-            
-        ## TEST PLOTS ##
-        ## map ##
-        xmap <- subset(interpOut, pressure == pComp[15])
-        ggplot(xmap, aes(x = lon, y = lat, fill = dustTau)) +
-        geom_tile()
-        ## THIS WORKS ##
-        ###########################
-        ## TEST PLOT ##
-        ## profile: pressure ##
-        xprof <- subset(interpOut1, lon == 2.5)
-        ggplot(xprof, aes(x = lat, y = pressure, z = dustTau)) +
-        geom_contour_filled() +
-        scale_y_continuous(name = 'Pressure (mB)', trans = c("log10", "reverse"), expand = expansion(), limits = c(12, 0.1), labels = function(x) sprintf("%g", x))
-        #geom_point(size=2)
-        ## THIS WORKS ##
 
+        ## TESTING ##
+        print(paste0('total time: ', Sys.time() - runTime1))
+        ## TESTING ##
 
+        saveRDS(interpOut, file = paste0(subDir, '/ModelData_Interp_', mons[imon], runYrs[iyr], '_', format(Sys.time(), "%y%m%d"), ".rds"))
 
-
-        ######################################
-        ## Code works up to this point ## 240628
-        ######################################
-
-
+        # ## TEST PLOTS ##
+        # ## map ##
+        # xmap <- subset(interpOut, pressure == pComp[15])
+        # ggplot(xmap, aes(x = lon, y = lat, fill = dustTau)) +
+        # geom_tile()
+        # ## THIS WORKS ##
+        # ###########################
+        # ## TEST PLOT ##
+        # ## profile: pressure ##
+        # xprof <- subset(interpOut1, lon == 2.5)
+        # ggplot(xprof, aes(x = lat, y = pressure, z = dustTau)) +
+        # geom_contour_filled() +
+        # scale_y_continuous(name = 'Pressure (mB)', trans = c("log10", "reverse"), expand = expansion(), limits = c(12, 0.1), labels = function(x) sprintf("%g", x))
+        # #geom_point(size=2)
+        # ## THIS WORKS ##
 
 
         ## objective 8: calculate zonal means ##
 
+        zonalOut <- data.frame()
+        for(ilat in 1:length(MCSlatLevels)) {
+            tLat <- subset(interpOut, lat == MCSlatLevels[ilat])
+            tLat <- tLat[is.na(tLat$dustTau)==FALSE,]
+
+            for(ipres in 1:length(pComp)) {
+                tPres <- subset(tLat, round(pressure, digit = 3) == round(pComp[ipres], digit = 3))
+
+                if(nrow(tPres) == 0) {
+                    tOut <- cbind(tLat[1,1:2], MCSlatLevels[ilat], pComp[ipres], NA, NA, 0)
+                    colnames(tOut) <- c('Year', 'Month', 'lat', 'pressure', 'MeanDustOpacity', 'SDDustOpacity', 'n')
+                    zonalOut <- rbind(zonalOut, tOut)
+                } else {
+                    tOut <- cbind(tLat[1,1:2], MCSlatLevels[ilat], pComp[ipres], mean(tPres$dustTau, na.rm = TRUE), sd(tPres$dustTau, na.rm = TRUE), nrow(tPres))
+                    colnames(tOut) <- c('Year', 'Month', 'lat', 'pressure', 'MeanDustOpacity', 'SDDustOpacity', 'n')
+                    zonalOut <- rbind(zonalOut, tOut)
+                }
+            }
+        }
+
+        saveRDS(zonalOut, file = paste0(subDir, '/ModelData_ZonalMeans_', mons[imon], runYrs[iyr], '_', format(Sys.time(), "%y%m%d"), ".rds"))
+
+        # ## TEST PLOTS ##
+        # ggplot(zonalOut, aes(x = lat, y = pressure, z = MeanDustOpacity)) +
+        # geom_contour_filled() +
+        # scale_y_continuous(name = 'Pressure (mB)', trans = c("log10", "reverse"), expand = expansion(), limits = c(12, 0.1), labels = function(x) sprintf("%g", x))
+        # ## This works ##
+
+        ggplot(zonalOut, aes(x = lat, y = pressure, z = MeanDustOpacity)) +
+        geom_contour_filled(bins = 10) + # 
+        ggtitle(paste0('Model Zonal Dust ', runYrs[iyr], mons[imon])) +
+        scale_y_continuous(name = 'Pressure (mB)', trans = c("log10", "reverse"), expand = expansion(), limits = c(12, 0.1), breaks = c(10, 1, 0.1), labels = function(x) sprintf("%g", x)) + #, labels = label_number()
+        scale_x_continuous(name = 'Latitude', expand = expansion(), limits = c(-90,90), breaks = seq(-90,90,30)) +
+        scale_fill_manual(values = dustPAL, drop = FALSE) + # values = dustPAL, limits = names(dustPAL), drop = FALSE limits = c(0, 0.01)
+        #scale_fill_brewer(palette = "YlOrRd") +
+        guides(fill = guide_colorsteps(title.position = "right", title = 'Dust Opacity (km-1)')) + # , title = VAR
+        theme(plot.title = element_text(hjust = 0.5, size = 21,
+            face = "bold"),
+            text = element_text(size = 18),
+            axis.text.x = element_text(size = 16),
+            aspect.ratio = 0.625,
+            axis.line = element_line(color = "black"),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.background = element_rect('grey85'), #element_blank()
+            panel.border = element_rect(color = "black", fill=NA, size=2),
+            legend.title=element_text(angle = -90),
+            legend.key=element_blank(),
+            legend.key.height = unit(0.5, "inch"),
+            legend.title.align = 0.5,
+            plot.margin = margin(0.25, 0.25, 0.25, 0.25, "cm"),
+            plot.tag.position = c(0.15, 0.02),
+            axis.title.y.right = element_text(margin = margin(l = 83)),
+            #legend.position = c(1.2, 0.5)
+        )
+        ggsave(paste0(plotDir, '/', 'MCSDust_Lower_', runYrs[iyr], '_', imon, monConv[imon,2], '_', format(Sys.time(), "%y%m%d"), ".png"), height = 4.5, width = 8.25, unit = 'in', dpi = 300)
+
+        ###### TESTING ######
+        runTime <- Sys.time() - runTime
+        print(runTime)
+        ###### TESTING ######
+    }
+}
+
+## now we have a table for each month of each year for all relevant dust data ##
+
+print(paste0('all loops run time: ', Sys.time() - runTime0))
 
 
 
 
 
 
-        ########################################################
+
+###############
+## Orphan ##
+########################################################
         
         aij <- mList
         aij[c(taijl, aijl)] <- NA
@@ -650,10 +790,8 @@ for(iyr in 1:length(runYrs)) {
         )
         ggsave(paste0(plotDir, '/', 'ModelDust_Lower_', runYrs[iyr], '_', imon, mons[imon], '_', format(Sys.time(), "%y%m%d"), ".png"), height = 4.5, width = 8.25, unit = 'in', dpi = 300)
 
-    }
-}
 
-## now we have a table for each month of each year for all relevant dust data ##
+
 
 
 ## open MCS data for comparison ##
