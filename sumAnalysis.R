@@ -6,6 +6,8 @@
 ## write geo & hemis data to sheet -> make plots
 ## Q: precipitation over land? land T?, ground water?
 
+## DEPRECIATED (240723) ##
+
 library(ncdf4)
 library(reshape2)
 library(tidyverse)
