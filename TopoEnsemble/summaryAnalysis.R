@@ -19,13 +19,16 @@ aijk <- subset(aij, grepl('aijk', aij) == TRUE)
 aijl <- subset(aij, grepl('aijl', aij) == TRUE)
 aij <- subset(aij, grepl('aijk', aij) == FALSE)
 aij <- subset(aij, grepl('aijl', aij) == FALSE)
+#aij <- subset(aij, grepl('E1oM20_Test2', aij) == FALSE)
 
 subDir <- paste0('Plots_', format(Sys.time(), "%y%m%d"))
 dir.create(subDir)
 
-diags <- c('tsurf_hemis', 'qatm_hemis', 'net_rad_planet_hemis', 'pcldt_hemis', 'gwtr_hemis', 'gice_hemis', 'prec_hemis', 'pot_evap_hemis', 'ZSI_hemis', 'snowdp_hemis', 'plan_alb_hemis')
+diags <- c('tsurf_hemis', 'net_rad_planet_hemis', 'qatm_hemis', 'pcldt_hemis', 'gwtr_hemis', 'gice_hemis', 'prec_hemis', 'pot_evap_hemis', 'ZSI_hemis', 'snowdp_hemis', 'plan_alb_hemis', 'grnd_alb_hemis')
 latList <- seq(-90,90,4)
 lonList <- seq(-177.5,177.5,5)
+diagLabs <- c('Temperature (ºC)', 'Net Planetary Radiation (W/m^2)', 'Vapor Column (kg/m^2)', 'Total Cloud Cover (%)', 'Earth Water (kg/m^2)', 'Earth Ice (kg/m^2)', 'Precipitation (mm/day)', 'Potential Evaporation (mm/day)', 'Ocean/Lake Ice Thickness (m)', 'Snow Depth (mm H2O)', 'Planetary Albedo (%)', 'Ground Albedo (%)')
+names(diagLabs) <- diags
 
 tempCut <- seq(-40,40, 80/15)
 tempCut <- c(-1000, tempCut)
@@ -46,6 +49,9 @@ for(ifile in 1:length(aij)) {
     if(title == 'aqua') {
         rot <- 'NA'
         wat <- 100
+    } else if(title == 'Test2') {
+        rot <- 'NA'
+        wat <- 71
     } else {
         rot <- strsplit(title, 'x')[[1]][1]
         wat <- strsplit(title, 'x')[[1]][2]
@@ -122,24 +128,32 @@ saveRDS(dataOut, file = paste0('AllData_Sum_TopoEns_', format(Sys.time(), "%y%m%
 
 ### SUMMARY PLOTS ###
 
+#earth <- nc_open('ANN2900-3399.aijE1oM20_Test2.nc')
 ## line plots ##
 for(idiag in 1:length(diags)) {
     tempPlot <- subset(dataOut, Diagnostic == diags[idiag])
     tempPlot$RotationAngle <- factor(tempPlot$RotationAngle)
 
-    p <- ggplot(subset(tempPlot, WaterContent < 100 & WaterContent > 0), aes(x = WaterContent, y = Value, group = RotationAngle, color = RotationAngle))
-    p <- p + geom_point(size = 4)
-    p <- p + geom_line(size = 2)
-    if(idiag == 1){
+    #tempEarth <- ncvar_get(earth, varid = diags[idiag])
+
+    p <- ggplot(subset(tempPlot, WaterContent < 100), aes(x = WaterContent, y = Value, group = RotationAngle, color = RotationAngle), guide = NULL)
+    p <- p + geom_point(size = 4, guide = NULL) # , shape = 21, stroke = 3
+    p <- p + geom_line(size = 1, guide = NULL) # , linetype = 'dashed'
+    if(idiag < 3){
         p <- p + geom_hline(aes(yintercept = 0), linetype = 'dashed', color = 'grey30')
     } else {
     }
+    if(idiag == 2){
+        p <- p + scale_y_continuous(limits = c(-0.5, 0.5), n.breaks = 5)
+    }
     p <- p + scale_color_manual(values = c('black', 'grey65'))
     p <- p + xlab("Water Surface Area (%)")
-    p <- p + ylab(diags[idiag])
-    p <- p + guides(color = guide_legend('Rotation\nAngle'))
-    p <- p + geom_point(data = subset(tempPlot, WaterContent == 0), aes(x = WaterContent, y = Value, color = RotationAngle), size = 3)
+    p <- p + ylab(diagLabs[idiag])
+    p <- p + guides(line = 'none', color = 'none') # color = element_blank()
+    #p <- p + guides(color = guide_legend('Rotation\nAngle'))
+    #p <- p + geom_point(data = subset(tempPlot, WaterContent == 0), aes(x = WaterContent, y = Value, color = RotationAngle), size = 3)
     p <- p + geom_point(data = subset(tempPlot, WaterContent == 100), aes(x = WaterContent, y = Value), color = 'black', size = 3, shape = 0, stroke = 2)
+    p <- p + geom_point(data = subset(tempPlot, WaterContent == 71), aes(x = WaterContent, y = Value), fill = 'white', color = 'black', size = 3, shape = 24, stroke = 2)
     p <- p + theme(
         plot.title = element_text(hjust = 0.5, size = 21, face = "bold"), 
         text = element_text(size = 18), 
@@ -152,7 +166,7 @@ for(idiag in 1:length(diags)) {
         panel.border = element_rect(color = "black", fill=NA, linewidth=2), 
         legend.key=element_blank(), 
         legend.key.height = unit(1.3, 'cm'), 
-        plot.margin = margin(0.25, 0.25, 0.25, 0.25, "cm"), 
+        plot.margin = margin(0.75, 0.25, 0.25, 0.25, "cm"), ## margin(top, right, bottom, left, unit)
         plot.tag.position = c(0.15, 0.02), 
         axis.title.y.right = element_text(margin = margin(l = 83)),
         strip.background =element_rect(fill="white"),
@@ -160,11 +174,164 @@ for(idiag in 1:length(diags)) {
         panel.spacing = unit(5, "mm")
     )
 
-    ggsave(paste0(subDir, '/TopoEns_line_', diags[idiag], '_', format(Sys.time(), "%y%m%d"), ".png"), plot = p, height = 7, width = 16, unit = 'in', dpi = 300)
+    ggsave(paste0(subDir, '/TopoEns_line_', diags[idiag], '_', format(Sys.time(), "%y%m%d"), ".png"), plot = p, height = 7, width = 11, unit = 'in', dpi = 300)
 }
+#nc_close(earth)
+
+
+
+
+
+
 
 ## SCATTER PLOTS ##
 scatterPlot <- dataOut[,c(2:3,6:7)]
 scatterPlot <- cast(scatterPlot, RotationAngle * WaterContent ~ Diagnostic)
 
-## compare tsurf and cloud cover ##
+
+## grnd alb vs temp ##
+p <- ggplot(scatterPlot, aes(x = grnd_alb_hemis, y = tsurf_hemis, fill = WaterContent), guide = NULL)
+p <- p + geom_point(shape = 21, size = 4, color = 'black', stroke = 1.5) # , shape = 21, stroke = 3
+p <- p + scale_fill_gradient(low = 'white', high = 'steelblue3', limits = c(0,100), guide = 'colorbar', breaks = seq(0,100, 25), oob = scales::squish)
+p <- p + xlab("Ground Albedo (%)")
+p <- p + ylab('Surface Temperature (ºC)')
+p <- p + guides(line = 'none', color = 'none', fill = guide_colorbar(title.position = 'bottom', title = 'Water Surface Area (%)', frame.colour = "black", frame.linewidth = 0.75, ticks.colour = "black", ticks.linewidth = 0.75,)) # color = element_blank()
+p <- p + scale_x_continuous(expand = expansion(), limits = c(0,30), breaks = seq(0,30,5))
+p <- p + scale_y_continuous(expand = expansion(), limits = c(-5,25), breaks = seq(-5,25,10))
+p <- p + theme(
+    plot.title = element_text(hjust = 0.5, size = 21, face = "bold"), 
+    text = element_text(size = 18), 
+    axis.text.x = element_text(size = 16),
+    aspect.ratio = 0.625, 
+    axis.line = element_line(color = "black"), 
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(), 
+    panel.background = element_blank(), 
+    panel.border = element_rect(color = "black", fill=NA, linewidth=2), 
+    legend.key=element_blank(), 
+    legend.key.height = unit(0.75, 'cm'),
+    legend.key.width = unit(4, 'cm'),
+    legend.title.align=0.5,
+    plot.margin = margin(0.5, 0.25, 0.25, 0.25, "cm"), #c(top,right,bottom,left)
+    plot.tag.position = c(0.15, 0.02), 
+    axis.title.y.right = element_text(margin = margin(l = 83)),
+    strip.background =element_rect(fill="white"),
+    #legend.position = c(1.07, 0.52), 
+    panel.spacing = unit(5, "mm"),
+    legend.position = 'bottom'
+)
+
+ggsave(plot = p, file = paste0(subDir, '/TopoEns_scatter_gndalbvtsurf_', format(Sys.time(), "%y%m%d"), ".png"), height = 7, width = 9, unit = 'in', dpi = 300)
+
+
+
+
+## plan alb vs temp ##
+p <- ggplot(scatterPlot, aes(x = plan_alb_hemis, y = tsurf_hemis))
+p <- p + geom_point(size = 4) # , shape = 21, stroke = 3
+
+
+
+## grnd alb vs plan alb ##
+p <- ggplot(scatterPlot, aes(x = plan_alb_hemis, y = grnd_alb_hemis, fill = tsurf_hemis))
+p <- p + geom_point(aes(fill = tsurf_hemis), size = 4, shape = 21)
+p <- p + scale_fill_gradientn(colors = panoplyPAL, limits = c(-25,25), guide = 'colorbar', breaks = seq(-25,25, 10), oob = scales::squish)
+p <- p + xlab('Planetary Albedo (%)')
+p <- p + ylab("Ground Albedo (%)")
+p <- p + guides(line = 'none', color = 'none', fill = guide_colorbar(title.position = 'bottom', title = 'Surface Temperature (ºC)', frame.colour = "black", frame.linewidth = 0.75, ticks.colour = "black", ticks.linewidth = 0.75,)) # color = element_blank()
+p <- p + scale_x_continuous(expand = expansion(), limits = c(20,40), breaks = seq(20,40,5))
+p <- p + scale_y_continuous(expand = expansion(), limits = c(0,30), breaks = seq(0,30,10))
+p <- p + theme(
+    plot.title = element_text(hjust = 0.5, size = 21, face = "bold"), 
+    text = element_text(size = 18), 
+    axis.text.x = element_text(size = 16),
+    aspect.ratio = 0.625, 
+    axis.line = element_line(color = "black"), 
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(), 
+    panel.background = element_blank(), 
+    panel.border = element_rect(color = "black", fill=NA, linewidth=2), 
+    legend.key=element_blank(), 
+    legend.key.height = unit(0.75, 'cm'),
+    legend.key.width = unit(4, 'cm'),
+    legend.title.align=0.5,
+    plot.margin = margin(0.5, 0.25, 0.25, 0.25, "cm"), #c(top,right,bottom,left)
+    plot.tag.position = c(0.15, 0.02), 
+    axis.title.y.right = element_text(margin = margin(l = 83)),
+    strip.background =element_rect(fill="white"),
+    #legend.position = c(1.07, 0.52), 
+    panel.spacing = unit(5, "mm"),
+    legend.position = 'bottom'
+)
+
+ggsave(plot = p, file = paste0(subDir, '/TopoEns_scatter_gndalbvplanalb_', format(Sys.time(), "%y%m%d"), ".png"), height = 7, width = 9, unit = 'in', dpi = 300)
+
+
+## plan alb vs grnd alb (swap axes) ##
+p <- ggplot(scatterPlot, aes(y = plan_alb_hemis, x = grnd_alb_hemis, fill = tsurf_hemis))
+p <- p + geom_point(aes(fill = tsurf_hemis), size = 4, shape = 21)
+p <- p + scale_fill_gradientn(colors = panoplyPAL, limits = c(-25,25), guide = 'colorbar', breaks = seq(-25,25, 10), oob = scales::squish)
+p <- p + ylab('Planetary Albedo (%)')
+p <- p + xlab("Ground Albedo (%)")
+p <- p + guides(line = 'none', color = 'none', fill = guide_colorbar(title.position = 'bottom', title = 'Surface Temperature (ºC)', frame.colour = "black", frame.linewidth = 0.75, ticks.colour = "black", ticks.linewidth = 0.75,)) # color = element_blank()
+p <- p + scale_y_continuous(expand = expansion(), limits = c(20,40), breaks = seq(20,40,5))
+p <- p + scale_x_continuous(expand = expansion(), limits = c(0,30), breaks = seq(0,30,10))
+p <- p + theme(
+    plot.title = element_text(hjust = 0.5, size = 21, face = "bold"), 
+    text = element_text(size = 18), 
+    axis.text.x = element_text(size = 16),
+    aspect.ratio = 0.625, 
+    axis.line = element_line(color = "black"), 
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(), 
+    panel.background = element_blank(), 
+    panel.border = element_rect(color = "black", fill=NA, linewidth=2), 
+    legend.key=element_blank(), 
+    legend.key.height = unit(0.75, 'cm'),
+    legend.key.width = unit(4, 'cm'),
+    legend.title.align=0.5,
+    plot.margin = margin(0.5, 0.25, 0.25, 0.25, "cm"), #c(top,right,bottom,left)
+    plot.tag.position = c(0.15, 0.02), 
+    axis.title.y.right = element_text(margin = margin(l = 83)),
+    strip.background =element_rect(fill="white"),
+    #legend.position = c(1.07, 0.52), 
+    panel.spacing = unit(5, "mm"),
+    legend.position = 'bottom'
+)
+
+ggsave(plot = p, file = paste0(subDir, '/TopoEns_scatter_planalbvgrndalb_', format(Sys.time(), "%y%m%d"), ".png"), height = 7, width = 9, unit = 'in', dpi = 300)
+
+
+## tsurf v cloud cover ##
+p <- ggplot(scatterPlot, aes(y = pcldt_hemis, x = tsurf_hemis, fill = WaterContent))
+p <- p + geom_point(size = 4, shape = 21)
+p <- p + scale_fill_gradient(limits = c(0,50), guide = 'colorbar', breaks = seq(0,50, 10), oob = scales::squish)
+p <- p + ylab('Cloud Cover (%)')
+p <- p + xlab("Surface Temperature (ºC)")
+p <- p + guides(line = 'none', color = 'none', fill = guide_colorbar(title.position = 'bottom', title = 'Surface Temperature (ºC)', frame.colour = "black", frame.linewidth = 0.75, ticks.colour = "black", ticks.linewidth = 0.75,)) # color = element_blank()
+#p <- p + scale_y_continuous(expand = expansion(), limits = c(20,40), breaks = seq(20,40,5))
+#p <- p + scale_x_continuous(expand = expansion(), limits = c(0,30), breaks = seq(0,30,10))
+p <- p + theme(
+    plot.title = element_text(hjust = 0.5, size = 21, face = "bold"), 
+    text = element_text(size = 18), 
+    axis.text.x = element_text(size = 16),
+    aspect.ratio = 0.625, 
+    axis.line = element_line(color = "black"), 
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(), 
+    panel.background = element_blank(), 
+    panel.border = element_rect(color = "black", fill=NA, linewidth=2), 
+    legend.key=element_blank(), 
+    legend.key.height = unit(0.75, 'cm'),
+    legend.key.width = unit(4, 'cm'),
+    legend.title.align=0.5,
+    plot.margin = margin(0.5, 0.25, 0.25, 0.25, "cm"), #c(top,right,bottom,left)
+    plot.tag.position = c(0.15, 0.02), 
+    axis.title.y.right = element_text(margin = margin(l = 83)),
+    strip.background =element_rect(fill="white"),
+    #legend.position = c(1.07, 0.52), 
+    panel.spacing = unit(5, "mm"),
+    legend.position = 'bottom'
+)
+
+ggsave(plot = p, file = paste0(subDir, '/TopoEns_scatter_planalbvgrndalb_', format(Sys.time(), "%y%m%d"), ".png"), height = 7, width = 9, unit = 'in', dpi = 300)
