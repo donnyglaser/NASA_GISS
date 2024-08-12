@@ -24,10 +24,10 @@ aij <- subset(aij, grepl('aijl', aij) == FALSE)
 subDir <- paste0('Plots_', format(Sys.time(), "%y%m%d"))
 dir.create(subDir)
 
-diags <- c('tsurf_hemis', 'net_rad_planet_hemis', 'qatm_hemis', 'pcldt_hemis', 'gwtr_hemis', 'gice_hemis', 'prec_hemis', 'pot_evap_hemis', 'ZSI_hemis', 'snowdp_hemis', 'plan_alb_hemis', 'grnd_alb_hemis')
+diags <- c('tsurf_hemis', 'net_rad_planet_hemis', 'qatm_hemis', 'pcldt_hemis', 'pcldh_hemis', 'pcldm_hemis', 'pcldl_hemis', 'gwtr_hemis', 'gice_hemis', 'prec_hemis', 'pot_evap_hemis', 'ZSI_hemis', 'snowdp_hemis', 'plan_alb_hemis', 'grnd_alb_hemis')
 latList <- seq(-90,90,4)
 lonList <- seq(-177.5,177.5,5)
-diagLabs <- c('Temperature (ºC)', 'Net Planetary Radiation (W/m^2)', 'Vapor Column (kg/m^2)', 'Total Cloud Cover (%)', 'Earth Water (kg/m^2)', 'Earth Ice (kg/m^2)', 'Precipitation (mm/day)', 'Potential Evaporation (mm/day)', 'Ocean/Lake Ice Thickness (m)', 'Snow Depth (mm H2O)', 'Planetary Albedo (%)', 'Ground Albedo (%)')
+diagLabs <- c('Temperature (ºC)', 'Net Planetary Radiation (W/m^2)', 'Vapor Column (kg/m^2)', 'Total Cloud Cover (%)', 'High Cloud Cover (%)', 'Mid Cloud Cover (%)', 'Low Cloud Cover (%)', 'Earth Water (kg/m^2)', 'Earth Ice (kg/m^2)', 'Precipitation (mm/day)', 'Potential Evaporation (mm/day)', 'Ocean/Lake Ice Thickness (m)', 'Snow Depth (mm H2O)', 'Planetary Albedo (%)', 'Ground Albedo (%)')
 names(diagLabs) <- diags
 
 tempCut <- seq(-40,40, 80/15)
@@ -117,6 +117,84 @@ for(ifile in 1:length(aij)) {
         } else {
         }
     }
+
+    # ## extract aridity ##
+    # ## i dont think this works (240726) ##
+    # ## constants ##
+    # r_surf <- 0
+    # zm <- 10 # height of wind measurements, m 
+    # zh <- 10 # height of wind measurements, humidity m
+    # d <- 0 # Zero plane displacement
+    # veg_height <- 0 # Bulk aerodynamic resistance
+    # z_om <- 0.005 # Roughness length governing momentum transfer
+    # z_oh <- 0.005 # Roughness length governing transfer of heat and vapour
+    # kvonKarm <- 0.41 # von Karmans constant, 0.41 [-]
+    # Rgas <- 0.287058
+    # MJday_to_watts = 11.5740741 # megajoule per day = 11.5740741 watt
+
+    # ## from diagnostics ##
+    # Ta <- ncvar_get(nc, varid = 'tsurf')
+    # Tmax <- ncvar_get(nc, varid = 'TMAXC')
+    # Tmin <- ncvar_get(nc, varid = 'TMINC')
+    # Rnet <- ncvar_get(nc, varid = 'srtrnf_grnd')
+    # gflux <- ncvar_get(nc, varid = 'netht_land')
+    # Pea <- ncvar_get(nc, varid = 'PVS')
+    # Psurf <- ncvar_get(nc, varid = 'prsurf')
+    # Wind <- ncvar_get(nc, varid = 'wsurf')
+
+    # # Calculate the latent heat of vaporization (MJ kg-1) (FAO value 2.45)
+    # lambda_lv <- 2.361E-3 * Ta 
+    # lambda_lv <- 2.501 - lambda_lv
+
+    # # Convert Pressure from Pa to kPa
+    # Psurf <- Psurf / 1000
+
+    # # Convert actual vapor pressure from Pa to kPa
+    # Pea <- Pea / 1000
+
+    # # Calculate saturation vapor pressure (kPa)
+    # es_min <- 0.6108 * exp((17.27 * Tmin) / (Tmin + 237.3))
+    # es_max <- 0.6108 * exp((17.27 * Tmax) / (Tmax + 237.3))
+    # Pes <- (es_min + es_max) / 2
+
+    # # Slope of the vapor pressure curve (kPa C-1)
+    # delta_vpc <- (4098 * (0.6108 * exp((17.27 * Ta) / (Ta+237.3)))) / ((Ta+237.3)^2)
+
+    # # Specific heat of the air (MJ kg-1 ºC-1)  => cp
+    # specific_heat_air = 1.013E-3
+
+    # # Mean air density at constant pressure (kg m-3) => rho_a
+    # # using ideal gas law
+    # density_air <- Psurf / (1.01 * (Ta + 273) * Rgas)
+
+    # # Ratio molecular weight of water vapour/dry air = 0.622
+    # epsilon = 0.622
+
+    # # Psychometric` parameter (kPa C-1)
+    # psych_parameter <- (specific_heat_air * Psurf) / (epsilon * lambda_lv)
+
+    # # Net radiation: convert W/m2 to MJ/m2/d
+    # Rnet <- Rnet / MJday_to_watts
+
+    # # Ground heat flux: convert W/m2 to MJ/m2/d
+    # gflux <- gflux / MJday_to_watts
+    # gflux <- ifelse(is.na(gflux[,]), 0, gflux[,])
+
+    # # Calculate VPD
+    # VPD <- Pes - Pea
+
+    # # Calculate Relative Humidity
+    # RH <- Pea / Pes
+
+    # r_air <- (log10((zm - d) / (z_om)) * log10((zh - d) / (z_oh))) / (kvonKarm^(2 * Wind))
+    # PETenergy <- (delta_vpc * (Rnet - gflux) / lambda_lv) / ((delta_vpc + psych_parameter * (1 + r_surf / r_air)))
+    # PETvpd <- (86400 * density_air * specific_heat_air * ((Pes - Pea) / (lambda_lv * r_air))) / ((delta_vpc + psych_parameter * (1 + r_surf / r_air)))
+
+    # PET <- PETenergy + PETvpd
+
+    # ## i dont think this works (240726) ##
+
+    nc_close(nc)
 }
 
 dataOut[,2] <- as.numeric(dataOut[,2])
@@ -136,7 +214,7 @@ for(idiag in 1:length(diags)) {
 
     #tempEarth <- ncvar_get(earth, varid = diags[idiag])
 
-    p <- ggplot(subset(tempPlot, WaterContent < 100), aes(x = WaterContent, y = Value, group = RotationAngle, color = RotationAngle), guide = NULL)
+    p <- ggplot(subset(tempPlot, WaterContent <= 50), aes(x = WaterContent, y = Value, group = RotationAngle, color = RotationAngle), guide = NULL)
     p <- p + geom_point(size = 4, guide = NULL) # , shape = 21, stroke = 3
     p <- p + geom_line(size = 1, guide = NULL) # , linetype = 'dashed'
     if(idiag < 3){
@@ -145,6 +223,9 @@ for(idiag in 1:length(diags)) {
     }
     if(idiag == 2){
         p <- p + scale_y_continuous(limits = c(-0.5, 0.5), n.breaks = 5)
+        p <- p + geom_hline(aes(yintercept = 0), linetype = 'dashed', color = 'grey30')
+        p <- p + geom_hline(aes(yintercept = -0.3), linetype = 'solid', color = 'darkred')
+        p <- p + geom_hline(aes(yintercept = 0.3), linetype = 'solid', color = 'darkred')
     }
     p <- p + scale_color_manual(values = c('black', 'grey65'))
     p <- p + xlab("Water Surface Area (%)")
