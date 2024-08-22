@@ -37,6 +37,10 @@ st=(*$name*)
 
 scaleacc $st aij
 scaleacc $st aijl
+scaleacc $st aijk
+scaleacc $st oij
+scaleacc $st oijl
+scaleacc $st agc
 
 echo $(date)
 
