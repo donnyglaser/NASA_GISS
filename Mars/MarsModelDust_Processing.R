@@ -8,6 +8,15 @@
 ## objective 7: interpolate dust to observational latitudes ##
 ## objective 8: calculate zonal means ##
 
+## got an error about missing packages in slurm ##
+install.packages('tidyverse')
+install.packages('ncdf4')
+install.packages('plyr')
+install.packages('dplyr')
+install.packages('scales')
+install.packages('viridis')
+install.packages('reshape')
+
 ### libraries ###
 library(tidyverse)
 library(ncdf4)
@@ -46,10 +55,10 @@ nc_close(exMCS)
 dustPAL <- c('#800f27', '#be1b26', '#e2201d', '#fc4d2b', '#fd8d3d', '#feb24c', '#fed976', '#ffeda0', '#fffecc', '#ffffff')
 dustPAL <- dustPAL[10:1]
 
-for(iyr in 1:1) { #length(runYrs)
+for(iyr in 1:length(runYrs)) { #length(runYrs)
     yrList <- list.files(getwd(), pattern = runYrs[iyr])
 
-    for(imon in 1:1) { #length(mons)
+    for(imon in 1:12) { #length(mons)
         mList <- yrList[grep(mons[imon], yrList)]
 
         ###############################
@@ -67,6 +76,9 @@ for(iyr in 1:1) { #length(runYrs)
         dust <- dust + ncvar_get(taijl, varid = 'Silt4')
         dust <- dust * 1e-8
         nc_close(taijl)
+        
+        ## testing ##
+        print('obj1: done')
 
         ###########################################
         ## objective 2: calculate dust in kg/m^2 ##
@@ -79,6 +91,9 @@ for(iyr in 1:1) { #length(runYrs)
 
         dust <- dust * airmass
         dust <- array(data = dust, dim = c(72,46,40), dimnames = list(lonList, latList, 1:40))
+
+        ## testing ##
+        print('obj2: done')
 
         ####################################
         ## objective 3: calculate layer h ##
@@ -110,6 +125,9 @@ for(iyr in 1:1) { #length(runYrs)
         nc_close(aijl)
         zdelta <- zdelta / 1000 # convert from m to km
 
+        ## testing ##
+        print('obj3: done')
+
         #########################################
         ## objective 4: calculate tau in km^-1 ##
         #########################################
@@ -123,6 +141,9 @@ for(iyr in 1:1) { #length(runYrs)
         tau <- tau / zdelta
         tauM <- melt(tau)
         colnames(tauM) <- c('lon', 'lat', 'layer', 'dustTau')
+
+        ## testing ##
+        print('obj4: done')
 
         ############################################################
         ## objective 5a: calculate layer pressure (Kostas method) ##
@@ -148,6 +169,9 @@ for(iyr in 1:1) { #length(runYrs)
         dataOut <- join(dataOut, tauM, by = c('lon', 'lat', 'layer'))
         dataOut <- cbind('ModelData', runYrs[iyr], mons[imon], dataOut)
         colnames(dataOut)[1:3] <- c('DataType', 'Year', 'Month')
+
+        ## testing ##
+        print('obj5: done')
 
         ####################################################################
         ## objective 6: interpolate dust to observational pressure values ##
@@ -191,9 +215,15 @@ for(iyr in 1:1) { #length(runYrs)
                     }
                 }
             }
+
+            ## testing ##
+            print(paste0('ilat: ', ilat))
         }
         interpOut1[,3:6] <- lapply(interpOut1[,3:6],as.numeric)
         colnames(interpOut1) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
+
+        ## testing ##
+        print('obj6: done')
 
         ##############################################################
         ## objective 7: interpolate dust to observational latitudes ##
@@ -255,10 +285,17 @@ for(iyr in 1:1) { #length(runYrs)
                 
                 }
             }
+
+            ## testing ##
+            print(paste0('ilon: ', ilon))
+
         }
 
         colnames(interpOut) <- c('Year', 'Month', 'lon', 'lat', 'pressure', 'dustTau')
         saveRDS(interpOut, file = paste0(subDir, '/ModelData_Interp_', mons[imon], runYrs[iyr], '_', format(Sys.time(), "%y%m%d"), ".rds"))
+
+        ## testing ##
+        print('obj7: done')
 
         ########################################
         ## objective 8: calculate zonal means ##
@@ -313,6 +350,10 @@ for(iyr in 1:1) { #length(runYrs)
             #legend.position = c(1.2, 0.5)
         )
         ggsave(paste0(plotDir, '/', 'MCSDust_Lower_', runYrs[iyr], '_', imon, monConv[imon,2], '_', format(Sys.time(), "%y%m%d"), ".png"), height = 4.5, width = 8.25, unit = 'in', dpi = 300)
+    
+        ## testing ##
+        print('obj8: done')
+
     }
 }
 

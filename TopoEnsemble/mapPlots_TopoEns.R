@@ -19,8 +19,8 @@ aijl <- subset(aij, grepl('aijl', aij) == TRUE)
 aij <- subset(aij, grepl('aijk', aij) == FALSE)
 aijFiles <- subset(aij, grepl('aijl', aij) == FALSE)
 
-diagList <- c('tsurf', 'lakefr', 'grnd_alb', 'pcldt', 'prec', 'pot_evap', 'snowdp', 'snowicefr', 'ZSI')
-diagNames <- c('Surface Temperature (ºC)', 'Lake Fraction (%)', 'Ground Albedo (%)', 'Total Cloud Cover (%)', 'Precipitation (mm/day)', 'Potential Evaporation (mm/day)', 'Snow Depth (mm H2O)', 'Snow Ice Fraction (%)', 'Ocean & Lake Ice Thickness (m)')
+diagList <- c('tsurf', 'lakefr', 'grnd_alb', 'pcldt', 'prec', 'pot_evap', 'pev_pen', 'snowdp', 'snowicefr', 'ZSI')
+diagNames <- c('Surface Temperature (ºC)', 'Lake Fraction (%)', 'Ground Albedo (%)', 'Total Cloud Cover (%)', 'Precipitation (mm/day)', 'Potential Evaporation (mm/day)', 'PENMAN POTENTIAL EVAPORATION (mm/day)', 'Snow Depth (mm H2O)', 'Snow Ice Fraction (%)', 'Ocean & Lake Ice Thickness (m)')
 latList <- seq(-90,90,4)
 lonList <- seq(-177.5,177.5,5)
 panoplyPAL <- c('#050fd9', '#2050ff', '#4297ff', '#6dc1ff', '#86daff', '#9defff', '#aff6ff', '#cfffff', '#ffffff', '#ffff66', '#ffec00', '#ffc400', '#ff9000', '#ff4900', '#ff0000', '#d50000', '#9f0000')
@@ -94,7 +94,7 @@ pctList <- c('lakefr', 'grnd_alb', 'pcldt', 'snowicefr', 'ZSI')
 panList <- c('tsurf')
 UWList <- c('lakefr', 'prec')
 BWList <- c('grnd_alb', 'pcldt', 'snowdp', 'snowicefr', 'ZSI')
-RWList <- c('pot_evap')
+RWList <- c('pot_evap', 'pev_pen')
 
 ## PLOTS and MAP DATA ##
 allOut <- matrix(nrow = 0, ncol = 6)
@@ -225,7 +225,6 @@ for(i in 1:length(tFile)) {
     fileName <- rbind(fileName, cbind(aijFiles[i], x))
 }
 
-
 aridPAL <- c('red4', 'orange3', 'khaki3', 'greenyellow', 'seagreen4')
 names(aridPAL) <- c('Hyperarid', 'Arid', 'Semiarid', 'Dry Subhumid', 'Humid')
 tPAL <- c('#050fd9', '#6dc1ff', '#C0FF9F', '#54D244', '#9f0000')
@@ -236,7 +235,8 @@ for(irun in 1:length(tFile)) {
 
     tRunList <- list.files(paste0('./', dirName, '/'), pattern = paste0('MapData_', fileName[irun,2]))
     prec <- tRunList[grep('_prec_', tRunList)]
-    evap <- tRunList[grep('_pot_evap_', tRunList)]
+    #evap <- tRunList[grep('_pot_evap_', tRunList)]
+    evap <- tRunList[grep('_pev_pen_', tRunList)]
     prec <- readRDS(paste0(dirName, '/', prec))
     evap <- readRDS(paste0(dirName, '/', evap))
     prec <- prec[,c(1,3:4,6,5)]
@@ -272,7 +272,7 @@ for(irun in 1:length(tFile)) {
     
 
 
-    arid <- arid %>% mutate(arid, aridityIndex = prec / (pot_evap / 10))
+    arid <- arid %>% mutate(arid, aridityIndex = prec / (pot_evap))
     ## discrete scale ##
     #arid <- arid %>% cut(arid$aridityIndex, breaks = c(0, 0.05, 0.2, 0.5, 0.65, Inf, NA), labels = c('Hyperarid', 'Arid', 'Semiarid', 'Dry Subhumid', 'Humid'))
 
@@ -403,6 +403,8 @@ for(irun in 1:length(tFile)) {
         strip.background =element_rect(fill="white"),
         legend.position = 'bottom'
     )
+    ggsave(plot = p, file = paste0(dirName, '/', fileName[irun,2], '_', 'AridityMap_HabZones_', format(Sys.time(), "%y%m%d"), ".png"), height = 6, width = 8, unit = 'in', dpi = 300)
+
 
 
     # ## then do plot with T ##
@@ -478,42 +480,44 @@ for(irun in 1:length(tFile)) {
     #     legend.position = 'bottom'
     # )
 
-    # ## HABITABLE ZONES (T background) ## (land + lake + ocean)
-    # p <- ggplot()
-    # p <- p + geom_tile(data = arid, aes(x = lon, y = lat, fill = tempLabels), width = 6, height = 5)
-    # p <- p + scale_fill_manual(name = 'Temperature Climate', limits = names(tPAL), values = tPAL, labels = c('Polar', 'SubTemperate', 'Temperate', 'Tropical', 'SuperTropical'))
-    # p <- p + geom_tile(data = subset(arid, venLandLakeOcean == 0), aes(x = lon, y = lat), fill = 'black', width = 1, height = 0.75)
-    # p <- p + geom_contour(data = arid, aes(x = lon, y = lat, z = venLandLakeOcean), breaks = 0.01, color = 'black', size = 1)
-    # p <- p + geom_vline(xintercept = c(-90, 0, 90), color = 'grey10', alpha = 0.5, linewidth = 0.25)
-    # p <- p + geom_vline(xintercept = c(-175, 175), color = 'black', linewidth = 0.75)
-    # p <- p + geom_hline(yintercept = c(-60, -30, 0, 30, 60), color = 'grey10', alpha = 0.5, linewidth = 0.25)
-    # p <- p + scale_x_continuous(expand = expansion(), limits = c(-177, 177), breaks = NULL)
-    # p <- p + scale_y_continuous(expand = expansion(), limits = c(-88, 88), breaks = NULL)
-    # p <- p + xlab(NULL)
-    # p <- p + ylab(NULL)
-    # p <- p + ggtitle(NULL)
-    # p <- p + guides(fill = guide_colorbar(title.position = 'bottom', title = 'Temperature Climate'))
-    # p <- p + coord_map('moll') ## <- converts map to mollweide projection (equal area, pseudocylindrical)
-    # p <- p + theme(plot.title = element_text(hjust = 0.5, size = 21,
-    #     face = "bold"),
-    #     text = element_text(size = 18),
-    #     axis.text.x = element_text(size = 14),
-    #     aspect.ratio = 0.625,
-    #     axis.line = element_line(color = "black"),
-    #     panel.grid.major = element_blank(),
-    #     panel.grid.minor = element_blank(),
-    #     panel.background = element_blank(),
-    #     panel.border = element_rect(color = "black", fill=NA, size=2),
-    #     legend.key=element_blank(),
-    #     legend.key.height = unit(0.25, "inch"),
-    #     legend.key.width = unit(3.25, "inch"),
-    #     legend.title.align=0.5,
-    #     plot.margin = margin(0.25, 0.25, 0.25, 0.25, "cm"),
-    #     plot.tag.position = c(0.15, 0.02),
-    #     axis.title.y.right = element_text(margin = margin(l = 83)),
-    #     strip.background =element_rect(fill="white"),
-    #     legend.position = 'bottom'
-    # )
+    ## HABITABLE ZONES (T background) ## (land + lake + ocean)
+    p <- ggplot()
+    p <- p + geom_tile(data = arid, aes(x = lon, y = lat, fill = tempLabels), width = 6, height = 5)
+    p <- p + scale_fill_manual(name = 'Temperature Climate', limits = names(tPAL), values = tPAL, labels = c('Polar', 'SubTemperate', 'Temperate', 'Tropical', 'SuperTropical'))
+    p <- p + geom_tile(data = subset(arid, venLandLakeOcean == 0), aes(x = lon, y = lat), fill = 'black', width = 1, height = 0.75)
+    p <- p + geom_contour(data = arid, aes(x = lon, y = lat, z = venLandLakeOcean), breaks = 0.01, color = 'black', size = 1)
+    p <- p + geom_vline(xintercept = c(-90, 0, 90), color = 'grey10', alpha = 0.5, linewidth = 0.25)
+    p <- p + geom_vline(xintercept = c(-175, 175), color = 'black', linewidth = 0.75)
+    p <- p + geom_hline(yintercept = c(-60, -30, 0, 30, 60), color = 'grey10', alpha = 0.5, linewidth = 0.25)
+    p <- p + scale_x_continuous(expand = expansion(), limits = c(-177, 177), breaks = NULL)
+    p <- p + scale_y_continuous(expand = expansion(), limits = c(-88, 88), breaks = NULL)
+    p <- p + xlab(NULL)
+    p <- p + ylab(NULL)
+    p <- p + ggtitle(NULL)
+    p <- p + guides(fill = guide_colorbar(title.position = 'bottom', title = 'Temperature Climate'))
+    p <- p + coord_map('moll') ## <- converts map to mollweide projection (equal area, pseudocylindrical)
+    p <- p + theme(plot.title = element_text(hjust = 0.5, size = 21,
+        face = "bold"),
+        text = element_text(size = 18),
+        axis.text.x = element_text(size = 14),
+        aspect.ratio = 0.625,
+        axis.line = element_line(color = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        panel.border = element_rect(color = "black", fill=NA, size=2),
+        legend.key=element_blank(),
+        legend.key.height = unit(0.25, "inch"),
+        legend.key.width = unit(3.25, "inch"),
+        legend.title.align=0.5,
+        plot.margin = margin(0.25, 0.25, 0.25, 0.25, "cm"),
+        plot.tag.position = c(0.15, 0.02),
+        axis.title.y.right = element_text(margin = margin(l = 83)),
+        strip.background =element_rect(fill="white"),
+        legend.position = 'bottom'
+    )
+    ggsave(plot = p, file = paste0(dirName, '/', fileName[irun,2], '_', 'TempZonesMap_HabZones_', format(Sys.time(), "%y%m%d"), ".png"), height = 6, width = 8, unit = 'in', dpi = 300)
+
 
     landHab <- subset(arid, venAridTemp == 1)
     landHab <- (sum(landHab$GridArea) / landTot) * 100
@@ -575,6 +579,7 @@ for(irun in 1:length(tFile)) {
     ## then summarize for line plots: run, %hyper, %arid, etc... ##
 }
 
+saveRDS(aridityOut, file = paste0(dirName, '/', 'AllRuns_AridityIndex_', format(Sys.time(), "%y%m%d"), ".rds"))
 
 
 
@@ -588,6 +593,8 @@ names(rotLab) <- c(0, 90)
 for(idiag in 1:length(diagList)) {
     tdiagList <- aijFiles <- list.files(paste0(getwd(), '/', dirName), pattern = paste0('_', diagList[idiag], '_'))
     tdiagList <- tdiagList[!grepl('aqua', tdiagList)]
+    tdiagList <- tdiagList[!grepl('E1oM20', tdiagList)]
+    tdiagList <- tdiagList[!grepl('.png', tdiagList)]
 
     allDiag <- data.frame()
     for(ifile in 1:length(tdiagList)) {
@@ -624,7 +631,7 @@ for(idiag in 1:length(diagList)) {
     p <- p + xlab(NULL)
     p <- p + ylab(NULL)
 
-    p <- p + facet_grid(rows = vars(rotate), cols = vars(wc), labeller = labeller(rotate = rotLab)) # , labeller = labeller(Diagnostic = climLab)
+    p <- p + facet_grid(rows = vars(wc), cols = vars(rotate), labeller = labeller(rotate = rotLab), switch = 'y') # , labeller = labeller(Diagnostic = climLab)
 
     if(diagList[idiag] %in% BWList) {
         if(diagList[idiag] == 'snowdp') {
@@ -647,7 +654,7 @@ for(idiag in 1:length(diagList)) {
     #guides(fill = guide_colorsteps(show.limits = TRUE, title = NULL)) +
     p <- p + geom_contour(aes(x = lon, y = lat, z = landfr), breaks = 1, color = 'black')
     p <- p + ggtitle(NULL)
-    p <- p + guides(fill = guide_colorbar(title.position = 'bottom', title = diagNames[idiag]))
+    p <- p + guides(fill = guide_colorbar(title.position = 'right', title = diagNames[idiag]))
     p <- p + coord_map('moll') ## <- converts map to mollweide projection (equal area, pseudocylindrical)
     p <- p + theme(plot.title = element_text(hjust = 0.5, size = 21,
         face = "bold"),
@@ -658,25 +665,118 @@ for(idiag in 1:length(diagList)) {
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),
-        panel.border = element_rect(color = "black", fill=NA, size=2),
+        panel.border = element_rect(color = 'black', fill=NA, size=2), #
         legend.key=element_blank(),
-        legend.key.height = unit(0.25, "inch"),
-        legend.key.width = unit(3.25, "inch"),
+        legend.title = element_text(angle = -90),
+        legend.key.height = unit(2.15, "inch"),
+        legend.key.width = unit(0.15, "inch"),
         legend.title.align=0.5,
         plot.margin = margin(0.25, 0.25, 0.25, 0.25, "cm"),
         plot.tag.position = c(0.15, 0.02),
         axis.title.y.right = element_text(margin = margin(l = 83)),
-        strip.background =element_rect(fill="white"),
-        legend.position = 'bottom'
+        axis.line.y = element_blank(),
+        strip.background =element_rect(fill="white", color = 'white'),
+        legend.position = 'right'
     )
-    ggsave(plot = p, file = paste0(dirName, '/', 'FacetMaps_', diagList[idiag], '_', format(Sys.time(), "%y%m%d"), ".png"), height = 5, width = 17, unit = 'in', dpi = 300)
+    ggsave(plot = p, file = paste0(dirName, '/', 'FacetMaps_', diagList[idiag], '_', format(Sys.time(), "%y%m%d"), ".png"), height = 12, width = 6, unit = 'in', dpi = 300)
 
     if(diagList[idiag] == 'tsurf') {
-        p <- p + scale_fill_gradientn(colors = panoplyPAL, limits = c(-40,40), guide = 'colorbar', breaks = seq(-40, 40, (80)/5), oob = scales::squish)
-        ggsave(plot = p, file = paste0(dirName, '/', 'FacetMaps_', diagList[idiag], 'Scale_', format(Sys.time(), "%y%m%d"), ".png"), height = 5, width = 17, unit = 'in', dpi = 300)
+        p <- p + scale_fill_gradientn(colors = panoplyPAL, limits = c(-40,40), guide = 'colorbar', breaks = seq(-40, 40, (80)/5), labels = c('<-40', seq(-24, 24, 16), '>40'), oob = scales::squish)
+        ggsave(plot = p, file = paste0(dirName, '/', 'FacetMaps_', diagList[idiag], 'Scale_', format(Sys.time(), "%y%m%d"), ".png"), height = 12, width = 6, unit = 'in', dpi = 300)
     }
 }
 
+
+
+
+## 50% snow ice fraction facets ##
+idiag=9
+tdiagList <- aijFiles <- list.files(paste0(getwd(), '/', dirName), pattern = paste0('_snowicefr_'))
+tdiagList <- tdiagList[!grepl('aqua', tdiagList)]
+tdiagList <- tdiagList[!grepl('E1oM20', tdiagList)]
+tdiagList <- tdiagList[!grepl('.png', tdiagList)]
+tdiagList <- tdiagList[grepl('x50_', tdiagList)]
+
+allDiag <- data.frame()
+for(ifile in 1:length(tdiagList)) {
+    tfile <- readRDS(file = paste0(dirName, '/', tdiagList[ifile]))
+    allDiag <- rbind(allDiag, tfile)
+}
+
+allDiag <- allDiag %>% mutate(allDiag, rotate = as.numeric(str_split(str_split(run, '_', simplify = TRUE)[,2], 'x', simplify = TRUE)[,1]))
+allDiag <- allDiag %>% mutate(allDiag, wc = as.numeric(str_split(str_split(run, '_', simplify = TRUE)[,2], 'x', simplify = TRUE)[,2]))
+allDiag$rotate <- factor(allDiag$rotate, levels = c(0,90))
+
+## do limits and colors here ##
+tmin <- 0
+if(diagList[idiag] == 'tsurf') {
+    tmin <- subset(limits2, diag == 'tsurf')[,2]
+    tmax <- subset(limits2, diag == 'tsurf')[,3]
+} else if(diagList[idiag] == 'prec' | diagList[idiag] == 'pot_evap' | diagList[idiag] == 'ZSI' | diagList[idiag] == 'snowdp'){
+    tmax <- subset(limits2, diag == diagList[idiag])[,3]
+} else {
+    tmax <- 100
+}
+
+p <- ggplot(allDiag, aes(x = lon, y = lat, fill = value))
+p <- p + geom_tile(aes(fill = value), width = 6, height = 5)
+p <- p + geom_vline(xintercept = c(-90, 0, 90), color = 'grey10', alpha = 0.5, size = 0.25)
+p <- p + geom_vline(xintercept = c(-175, 175), color = 'black', size = 0.75)
+p <- p + geom_hline(yintercept = c(-60, -30, 0, 30, 60), color = 'grey10', alpha = 0.5, size = 0.25)
+p <- p + scale_x_continuous(expand = expansion(), limits = c(-177, 177), breaks = NULL)
+p <- p + scale_y_continuous(expand = expansion(), limits = c(-88, 88), breaks = NULL)
+p <- p + xlab(NULL)
+p <- p + ylab(NULL)
+
+p <- p + facet_grid(rows = vars(wc), cols = vars(rotate), labeller = labeller(NULL), switch = 'y') # , labeller = labeller(Diagnostic = climLab)
+
+if(diagList[idiag] %in% BWList) {
+    if(diagList[idiag] == 'snowdp') {
+        p <- p + scale_fill_gradient(low = 'grey20', high = 'white', limits = c(0, tmax), guide = 'colorbar', breaks = seq(0,tmax, tmax/5), oob = scales::squish)
+    } else if(diagList[idiag] == 'ZSI') {
+        p <- p + scale_fill_gradient(low = 'grey20', high = 'white', limits = c(0, tmax), guide = 'colorbar', breaks = seq(0,tmax, tmax/5), oob = scales::squish)
+    } else {
+        p <- p + scale_fill_gradient(low = 'grey20', high = 'white', limits = c(tmin, tmax), guide = 'colorbar', breaks = seq(0,100, 25), oob = scales::squish)
+    }
+} else if(diagList[idiag] %in% UWList) {                                                        
+    p <- p + scale_fill_gradient(low = 'white', high = 'blue', limits = c(tmin, tmax), guide = 'colorbar', breaks = seq(tmin, tmax, (tmax-tmin)/5), oob = scales::squish)
+} else if(diagList[idiag] %in% RWList) {
+    p <- p + scale_fill_gradient(low = 'white', high = 'red', limits = c(tmin, tmax), guide = 'colorbar', breaks = seq(tmin, tmax, (tmax-tmin)/7), oob = scales::squish)
+} else {
+    # p <- p + scale_fill_gradientn(colors = panoplyPAL, values = seq(tmin, tmax, ((tmax*2)/16)), limits = c(tmin, tmax), guide = 'colorbar')
+    p <- p + scale_fill_gradientn(colors = panoplyPAL, limits = c(tmin, tmax), guide = 'colorbar', breaks = seq(tmin, tmax, (tmax-tmin)/7), oob = scales::squish)
+}
+
+#scale_fill_manual(limits = names(palTemp), values = palTemp) +
+#guides(fill = guide_colorsteps(show.limits = TRUE, title = NULL)) +
+p <- p + geom_contour(aes(x = lon, y = lat, z = landfr), breaks = 1, color = 'black')
+p <- p + ggtitle(NULL)
+p <- p + guides(fill = guide_colorbar(title.position = 'bottom', title = 'Snow Ice Fraction (%)'))
+p <- p + coord_map('moll') ## <- converts map to mollweide projection (equal area, pseudocylindrical)
+p <- p + theme(plot.title = element_text(hjust = 0.5, size = 21,
+    face = "bold"),
+    text = element_text(size = 18),
+    axis.text.x = element_text(size = 14),
+    aspect.ratio = 0.625,
+    axis.line = element_line(color = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    panel.border = element_rect(color = 'black', fill=NA, size=2), #
+    legend.key=element_blank(),
+    legend.title = element_text(angle = 0),
+    legend.key.height = unit(0.15, "inch"),
+    legend.key.width = unit(2.25, "inch"),
+    legend.title.align=0.5,
+    plot.margin = margin(0.25, 0.25, 0.25, 0.25, "cm"),
+    plot.tag.position = c(0.15, 0.02),
+    axis.title.y.right = element_text(margin = margin(l = 83)),
+    axis.line.y = element_blank(),
+    strip.background =element_rect(fill="white", color = 'white'),
+    strip.text = element_blank(),
+    legend.position = 'bottom'
+)
+ggsave(plot = p, file = paste0(dirName, '/', 'FacetMaps_snowice_50_', format(Sys.time(), "%y%m%d"), ".png"), height = 5, width = 11.75, unit = 'in', dpi = 300)
 
 
 

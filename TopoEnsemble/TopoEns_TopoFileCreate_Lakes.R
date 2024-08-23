@@ -25,7 +25,7 @@ lono <- ncdim_def('lono', 'deg', xvals, create_dimvar=TRUE)
 lato <- ncdim_def('lato', 'deg', yvals, create_dimvar=TRUE)
 olayers <- data.frame(Layer = 1:13, Bottom = c(12, 30, 57, 98, 158, 249, 386, 591, 899, 1360, 2052, 3090, 4647), Mid = c(6, 21, 44, 77, 128, 204, 318, 488, 745, 1129, 1706, 2571, 3868))
 zoc <- ncdim_def('zoc', 'm', c(6, 21, 44, 77, 128, 204, 318, 488, 745, 1129, 1706, 2571, 3868))
-topoName <- data.frame(i = 1:5, RotationAngle = c(0, 22, 45, 60, 90))
+topoName <- data.frame(i = 1:2, RotationAngle = c(0, 90))
 
 #fileList <- c('mars_topo_trans0_paleo_C.nc', 'mars_topo_trans22_paleo_C.nc', 'mars_topo_trans45_paleo_C.nc', 'mars_topo_trans60_paleo_C.nc', 'mars_topo_trans90_paleo_C.nc')
 fileList <- c('mars_topo_trans0_paleo_C.nc',  'mars_topo_trans90_paleo_C.nc') # only 0 and 90
@@ -45,7 +45,7 @@ for(ifile in 1:length(fileList)) {
     zocean <- t(origTopo)
     hlake <- t(origTopo)
 
-    for(isurf in 1:nrow(pctSurf)) {
+    for(isurf in 2:3) {
         tempz <- pctSurf[isurf, 2]
 
         for(irow in 1:72) {
